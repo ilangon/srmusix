@@ -15,7 +15,7 @@
   <Grid Grid.Row="1" Margin="0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="390"/><ColumnDefinition/><ColumnDefinition Width="300"/></Grid.ColumnDefinitions>
    <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="10" Margin="0,0,10,0">
     <DockPanel><StackPanel DockPanel.Dock="Top"><TextBlock Text="PLAYLIST" FontWeight="Bold" FontSize="16"/><StackPanel Orientation="Horizontal"><Button Content="＋ Add" Click="Add_Click"/><Button Content="Remove" Click="Remove_Click"/><Button Content="Clear" Click="Clear_Click"/></StackPanel></StackPanel>
-     <ListBox x:Name="Playlist" ItemsSource="{Binding Playlist}" Background="#0E121B" Foreground="White" BorderThickness="0" Margin="0,8,0,0" MouseDoubleClick="Playlist_DoubleClick">
+     <ListBox x:Name="PlaylistBox" ItemsSource="{Binding PlaylistItems}" Background="#0E121B" Foreground="White" BorderThickness="0" Margin="0,8,0,0" MouseDoubleClick="Playlist_DoubleClick">
       <ListBox.ItemTemplate><DataTemplate><Grid Margin="4"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="75"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding ScheduledAt, StringFormat='{}{0:HH:mm:ss}'}" Foreground="#8FA0BF"/></StackPanel><TextBlock Grid.Column="1" Text="{Binding Status}" Foreground="{StaticResource Gold}" VerticalAlignment="Center"/></Grid></DataTemplate></ListBox.ItemTemplate>
      </ListBox></DockPanel>
    </Border>
@@ -30,4 +30,3 @@
   <TextBlock Grid.Row="3" x:Name="StatusText" Text="READY — Add media to begin" VerticalAlignment="Center" Foreground="#8FA0BF"/>
  </Grid>
 </Window>
-
