@@ -1,0 +1,25 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore SRMusix.Playout.sln
+      - name: Publish self-contained app
+        run: dotnet publish src/SRMusix.Playout/SRMusix.Playout.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o artifacts/SRMusixPlayout
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SRMusixPlayout-win-x64
+          path: artifacts/SRMusixPlayout
+          if-no-files-found: error
+
