@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace SRMusix.Playout.Models;
 
 public sealed class PlaylistItem
@@ -8,4 +10,3 @@ public sealed class PlaylistItem
     public DateTime? ScheduledAt { get; set; }
     public string Status { get; set; } = "Ready";
 }
-
