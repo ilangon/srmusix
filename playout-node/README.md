@@ -6,7 +6,16 @@ This is the Node/browser edition. FFmpeg decodes the source on the server and cr
 
 Any input recognized by the installed FFmpeg build, including **M2P**, M2V, MPEG/MPG, VOB, DAT, TS/M2TS/MTS, MXF, MOV, MKV, AVI, WMV, FLV, MP4, WebM, MP3, WAV, AAC, AC3 and FLAC. There is no hard-coded extension rejection list.
 
-## Windows start
+## Windows easy setup
+
+1. Download the repository ZIP and extract it completely.
+2. Open the extracted `playout-node` folder.
+3. Double-click `install-windows.bat` once. It installs Node.js LTS and FFmpeg with Windows `winget`, installs the local components, and creates an **SR MUSIX HD Playout** Desktop shortcut.
+4. After setup, use that Desktop shortcut. The control page opens at `http://localhost:3000`.
+
+Do not run the BAT file while it is still inside the ZIP; extract the ZIP first.
+
+## Manual Windows start
 
 1. Install 64-bit Node.js LTS.
 2. Install a full 64-bit FFmpeg build and add its `bin` folder to Windows PATH.
