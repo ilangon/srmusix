@@ -34,3 +34,7 @@ FFmpeg is intentionally not committed. Put an official LGPL shared x64 build at 
 
 Blackmagic SDI/HDMI output needs Blackmagic Desktop Video and a DeckLink SDK-backed output module. The current first version detects/configures the intended output but uses the desktop preview until that module is added.
 
+
+## Recommended: Node/Web edition
+
+For the Windows desktop web interface with broad FFmpeg media support, including `.m2p`, use [`playout-node/`](playout-node/). Install Node.js LTS and FFmpeg, then double-click `playout-node/start-windows.bat`. It opens at `http://localhost:3000`.
