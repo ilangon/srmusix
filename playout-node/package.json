@@ -1,0 +1,16 @@
+{
+  "name": "sr-musix-playout-web",
+  "version": "2.0.0",
+  "private": true,
+  "description": "FFmpeg-backed local web playout for SR MUSIX HD",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "hls.js": "^1.6.13",
+    "multer": "^2.0.2"
+  }
+}
