@@ -1,0 +1,63 @@
+{
+  "name": "sr-musix-playout",
+  "productName": "SR MUSIX HD Playout V3.6.1",
+  "version": "3.6.1",
+  "description": "Windows desktop broadcast playout with FFmpeg compatibility playback, CG and DVB/UDP output",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check app.js",
+    "dist:win": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12",
+    "jsdom": "^30.0.1"
+  },
+  "build": {
+    "appId": "in.srnetwork.srmusix.playout",
+    "productName": "SR MUSIX HD Playout V3.6.1",
+    "asar": true,
+    "files": [
+      "index.html",
+      "style.css",
+      "udp.css",
+      "v32.css",
+      "app.js",
+      "main.js",
+      "preload.js",
+      "README_TAMIL.txt",
+      "*.bat",
+      "*.ps1"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "fontconfig",
+        "to": "fontconfig",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "artifactName": "SR_MUSIX_HD_Playout_${version}_${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

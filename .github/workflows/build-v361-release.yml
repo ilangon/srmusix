@@ -1,0 +1,53 @@
+name: Build SR MUSIX V3.6.1 Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'playout/**'
+      - '.github/workflows/build-v361-release.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: playout/package-lock.json
+      - name: Install application packages
+        working-directory: playout
+        run: npm ci
+      - name: Download and bundle Full FFmpeg
+        shell: powershell
+        working-directory: playout
+        run: |
+          New-Item -ItemType Directory -Force -Path bin | Out-Null
+          Invoke-WebRequest -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile "$env:RUNNER_TEMP\ffmpeg-full.zip"
+          Expand-Archive "$env:RUNNER_TEMP\ffmpeg-full.zip" "$env:RUNNER_TEMP\ffmpeg-full" -Force
+          Get-ChildItem "$env:RUNNER_TEMP\ffmpeg-full" -Recurse -Filter '*.exe' | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe','ffplay.exe') } | Copy-Item -Destination bin -Force
+          @('ffmpeg.exe','ffprobe.exe','ffplay.exe') | ForEach-Object { if (-not (Test-Path "bin\$_")) { throw "Missing $_" } }
+      - name: Validate software
+        working-directory: playout
+        run: |
+          npm run check
+          node renderer-smoke-test.js
+      - name: Build Windows portable folder
+        working-directory: playout
+        run: npx electron-builder --win dir --x64
+      - name: Create one portable ZIP
+        shell: powershell
+        run: Compress-Archive -Path 'playout\dist\win-unpacked' -DestinationPath 'SR_MUSIX_HD_Playout_V3.6.1_Windows_x64_Full_Codecs.zip' -CompressionLevel Optimal
+      - name: Publish V3.6.1 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v3.6.1
+          name: SR MUSIX HD Playout V3.6.1
+          body: Full-codec Windows portable build with automatic/manual CPU and GPU decoder selection, decoder testing, hardware fallback, and M2B/M2P/VOB/VOP compatibility routing.
+          files: SR_MUSIX_HD_Playout_V3.6.1_Windows_x64_Full_Codecs.zip

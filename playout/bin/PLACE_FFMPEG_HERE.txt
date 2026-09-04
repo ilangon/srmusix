@@ -1,0 +1,9 @@
+For an offline/self-contained package, place official Windows x64 files here:
+
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe (optional external diagnostic preview)
+
+If this folder does not contain them, the app uses FFmpeg installed in Windows PATH.
+Do not copy isolated avcodec/avformat DLL files here without their matching official executable build.
+
