@@ -2468,6 +2468,31 @@ $("#autoQuality").parentElement.insertAdjacentHTML(
   "afterend",
   '<label>Video Softness<input id="softness" type="range" min="0" max="2" step="0.05" value="0"></label><label><input id="autoVideoFix" type="checkbox" checked> Auto Video Fix</label>',
 );
+$("#pageCorrection h2").insertAdjacentHTML(
+  "afterend",
+  '<section id="autoVideoPanel" class="auto-video-panel"><b>⚡ AUTO VIDEO / SCREEN ADJUST</b><div id="autoVideoSwitches"></div><label>Screen Fit<select id="autoAspectMode"><option value="contain">16:9 Fit</option><option value="cover">Full Screen Crop</option><option value="fill">Stretch</option><option value="4:3">4:3 Centre</option></select></label><button id="applyAutoVideo" class="primary">APPLY AUTO NOW</button><small>Preview மற்றும் எல்லா live output-களுக்கும் உடனடியாக apply ஆகும்.</small></section>',
+);
+const autoSwitches = $("#autoVideoSwitches");
+[autoColor, autoQuality, autoVideoFix].forEach((control) =>
+  autoSwitches.appendChild(control.closest("label")),
+);
+$("#autoAspectMode").value = $("#aspectMode").value;
+$("#autoAspectMode").onchange = async () => {
+  $("#aspectMode").value = $("#autoAspectMode").value;
+  applyAspect();
+  await commonOutputChanged();
+};
+$("#applyAutoVideo").onclick = async () => {
+  autoColor.checked = true;
+  autoQuality.checked = true;
+  autoVideoFix.checked = true;
+  const settings = correctionFromControls();
+  localStorage.setItem("correctionSettings", JSON.stringify(settings));
+  applyPreviewCorrections(settings);
+  await refreshLiveOutputs();
+  $("#correctionStatus").textContent =
+    "AUTO VIDEO ACTIVE • Preview + all outputs updated";
+};
 $("#pageSettings h2").insertAdjacentHTML(
   "afterend",
   '<fieldset><legend>Full FFmpeg Codec Engine</legend><div class="rtmp-buttons"><button id="checkFFmpeg" class="primary">CHECK CODECS</button><button id="installFFmpeg">INSTALL FULL FFMPEG</button></div><pre id="ffmpegStatus" class="codec-report">FFmpeg status not checked</pre></fieldset>',
@@ -2818,6 +2843,7 @@ $("#startDeck").onclick = async () => {
     cg: cgConfig(),
     color: correction.color,
     sound: correction.sound,
+    quality: correction.quality,
   });
   $("#deckStatus").textContent = r.message;
 };
