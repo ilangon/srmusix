@@ -351,12 +351,6 @@ function makeOutputFilter(useUdp = true) {
     h = Number($("#customH").value);
   } else if (ir !== "source") {
     [w, h] = ir.split("x").map(Number);
-  } else if (useUdp) {
-    let m = String($("#udpRes").value).match(/scale=(\d+):(\d+)/);
-    if (m) {
-      w = Number(m[1]);
-      h = Number(m[2]);
-    }
   }
   if (!w || !h) return "source";
   let mode = $("#aspectMode").value;
@@ -373,13 +367,9 @@ async function refreshLiveOutputs() {
   let r = rtmpLive,
     u = udpLive;
   if (r) {
-    await window.playoutAPI.stopRTMP();
-    rtmpLive = false;
     await $("#goLive").onclick();
   }
   if (u) {
-    await window.playoutAPI.stopUDP();
-    udpLive = false;
     await $("#startUdp").onclick();
   }
   if (r || u) {
@@ -458,7 +448,7 @@ $("#rtmpCodec").parentElement.insertAdjacentHTML(
 );
 $("#streamNetworkCard").parentElement.insertAdjacentHTML(
   "afterend",
-  '<fieldset class="engine-grid"><legend>DECODER / PROCESSOR MODE</legend><label>Decoder — Manual or Auto<select id="decodeEngine"><option value="auto-lowcpu" selected>AUTO — Low CPU Recommended</option><option value="gpu">GPU Auto — Installed Hardware</option><option value="d3d11va">Microsoft D3D11VA</option><option value="dxva2">Microsoft DXVA2</option><option value="cuda">NVIDIA CUDA</option><option value="qsv">Intel Quick Sync</option><option value="cpu">CPU Safe — Maximum Compatibility</option></select></label><label>Encoder — CPU or GPU<select id="encodeEngine"><option value="auto" selected>AUTO — GPU First, CPU Fallback</option><option value="microsoft">Microsoft Media Foundation</option><option value="gpu">GPU — NVIDIA / Intel / AMD</option><option value="cpu">CPU — FFmpeg Safe (2 Threads)</option></select></label><button id="detectCodecEngine" type="button" class="action-cyan">TEST / DETECT DECODER</button><pre id="codecEngineStatus" class="codec-report">Select a video, then press TEST / DETECT.</pre></fieldset>',
+  '<fieldset class="engine-grid"><legend>PLAYBACK DECODER — INPUT ONLY</legend><label>Decoder — Manual or Smart Auto<select id="decodeEngine"><option value="auto-lowcpu" selected>SMART AUTO — Quick Play / Low CPU</option><option value="gpu">GPU Auto — Installed Hardware</option><option value="d3d11va">Microsoft D3D11VA</option><option value="dxva2">Microsoft DXVA2</option><option value="cuda">NVIDIA CUDA</option><option value="qsv">Intel Quick Sync</option><option value="cpu">CPU Safe — Maximum Compatibility</option></select></label><input id="encodeEngine" type="hidden" value="auto"><p class="hint">இந்த decoder playback/input-க்கு மட்டும். Streaming encoder-ஐ RTMP அல்லது UDP/SRT பகுதியில் தனியாகத் தேர்வு செய்யலாம்.</p><button id="detectCodecEngine" type="button" class="action-cyan">TEST / DETECT DECODER</button><pre id="codecEngineStatus" class="codec-report">Select a video, then press TEST / DETECT.</pre></fieldset>',
 );
 for (const id of ["rtmpCodec", "udpCodec", "videoCodec"]) {
   const select = $("#" + id);
@@ -475,27 +465,9 @@ function engineConfig() {
   };
 }
 function applyEngineSelection() {
-  let mode = $("#encodeEngine").value,
-    codec =
-      mode === "cpu"
-        ? "libx264"
-        : mode === "microsoft"
-          ? "h264_mf"
-          : "h264_nvenc";
-  $("#rtmpCodec").value = [...$("#rtmpCodec").options].some(
-    (o) => o.value === codec,
-  )
-    ? codec
-    : "libx264";
-  $("#udpCodec").value = [...$("#udpCodec").options].some(
-    (o) => o.value === codec,
-  )
-    ? codec
-    : "libx264";
   localStorage.setItem("engineConfig", JSON.stringify(engineConfig()));
   window.playoutAPI.setEngineConfig(engineConfig());
 }
-$("#encodeEngine").onchange = applyEngineSelection;
 $("#decodeEngine").onchange = applyEngineSelection;
 try {
   let e = JSON.parse(localStorage.getItem("engineConfig") || "{}");
@@ -530,6 +502,49 @@ $("#udpRes").parentElement.insertAdjacentHTML(
   "beforebegin",
   '<label>Output Protocol<select id="streamProtocol"><option value="udp">UDP MPEG-TS</option><option value="rtp">RTP MPEG-TS</option><option value="srt">SRT MPEG-TS</option></select></label><label id="srtUrlLabel" style="display:none">Complete SRT URL<input id="srtUrl" value="srt://127.0.0.1:9000?mode=caller&amp;latency=200000" placeholder="srt://host:port?mode=caller"></label><label>UDP / RTP / SRT Network PCI / Ethernet Card<select id="udpNetworkCard"><option value="">Auto Route</option></select></label>',
 );
+// One professional Program Output format feeds every destination.
+const outputFieldset = $("#inputRes").closest("fieldset");
+outputFieldset.querySelector("legend").textContent =
+  "MAIN OUTPUT FORMAT — COMMON FOR ALL OUTPUTS";
+$("#inputRes").parentElement.firstChild.textContent = "Main Video Resolution";
+$("#inputFps").parentElement.firstChild.textContent = "Main Frame Rate";
+$("#inputFps").parentElement.insertAdjacentHTML(
+  "afterend",
+  '<div class="udp-grid"><label>Main Audio Rate<select id="mainAudioRate"><option value="48000" selected>48000 Hz — Broadcast</option><option value="96000">96000 Hz</option></select></label><label>Main Audio Channels<select id="mainAudioChannels"><option value="2" selected>2 Ch — Stereo</option><option value="1">1 Ch — Mono</option><option value="4">4 Ch</option><option value="6">6 Ch</option><option value="8">8 Ch</option></select></label></div><p class="hint">Preview, Fullscreen, RTMP, UDP/RTP/SRT மற்றும் DeckLink அனைத்துக்கும் இதே format பயன்படுத்தப்படும்.</p>',
+);
+$("#rtmpOutputRes").closest("label").style.display = "none";
+$("#udpRes").closest("label").style.display = "none";
+
+function commonOutputConfig() {
+  return {
+    resolution: makeOutputFilter(false),
+    fps: $("#inputFps").value,
+    audioRate: $("#mainAudioRate").value,
+    audioChannels: $("#mainAudioChannels").value,
+    audioRate: $("#mainAudioRate")?.value || "48000",
+    audioChannels: $("#mainAudioChannels")?.value || "2",
+  };
+}
+function updateMainOutputBadge() {
+  let res = $("#inputRes").value;
+  if (res === "custom") res = `${$("#customW").value}x${$("#customH").value}`;
+  if (res === "source") res = "SOURCE";
+  const fps = $("#inputFps").value === "source" ? "Source FPS" : `${$("#inputFps").value}p`;
+  const badge = $(".left.card .section-title span");
+  if (badge) badge.textContent = `${res} • ${fps} • ${$("#aspectMode").selectedOptions[0].textContent}`;
+}
+let commonOutputTimer = 0;
+async function commonOutputChanged() {
+  updateMainOutputBadge();
+  clearTimeout(commonOutputTimer);
+  commonOutputTimer = setTimeout(async () => {
+    if (rtmpLive || udpLive) await refreshLiveOutputs();
+  }, 180);
+}
+[
+  "inputRes", "customW", "customH", "inputFps", "mainAudioRate",
+  "mainAudioChannels", "aspectMode",
+].forEach((id) => $("#" + id)?.addEventListener("input", commonOutputChanged));
 $("#streamProtocol").onchange = () => {
   $("#srtUrlLabel").style.display =
     $("#streamProtocol").value === "srt" ? "block" : "none";
@@ -1758,6 +1773,7 @@ video.onended = async () => {
     preloadedIndex = -1;
     render();
     prepareNextMedia();
+    if (rtmpLive || udpLive) await refreshLiveOutputs();
   } else $("#next").click();
 };
 $("#logoToggle").onchange = (e) =>
@@ -2013,16 +2029,7 @@ $("#refreshSchedules").onclick = () => {
 };
 $("#refreshFillers").onclick = () => renderPrograms();
 function selectedOutputFilter(id) {
-  let v = $("#" + id)?.value || "source",
-    sizes = {
-      576: [720, 576],
-      720: [1280, 720],
-      1080: [1920, 1080],
-      2160: [3840, 2160],
-    };
-  if (v === "source" || !sizes[v]) return "source";
-  let [w, h] = sizes[v];
-  return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`;
+  return makeOutputFilter(false);
 }
 $("#goLive").onclick = async () => {
   if (current < 0) return alert("Please select a media file first");
@@ -2049,7 +2056,7 @@ $("#goLive").onclick = async () => {
       localAddress: $("#streamNetworkCard").value,
       startAt: playhead(),
       endAt: m.out || 0,
-      resolution: selectedOutputFilter("rtmpOutputRes"),
+      ...commonOutputConfig(),
       encoder: codec,
       bitrate: $("#rtmpBitrate").value,
       gop: $("#rtmpGop").value,
@@ -2060,7 +2067,7 @@ $("#goLive").onclick = async () => {
       quality: correction.quality,
     });
   $("#rtmpStatus").textContent = r.ok
-    ? `LIVE • ${codec} • ${$("#rtmpBitrate").value} • ${$("#rtmpOutputRes").selectedOptions[0].textContent}`
+    ? `LIVE • ${codec} • ${$("#rtmpBitrate").value} • COMMON ${$("#inputRes").selectedOptions[0].textContent}`
     : r.message;
   rtmpLive = !!r.ok;
   updateStreamIndicators();
@@ -2094,7 +2101,7 @@ $("#startUdp").onclick = async () => {
     endAt: m.out || 0,
     ip: $("#udpIp").value,
     port: $("#udpPort").value,
-    resolution: makeOutputFilter(true),
+    ...commonOutputConfig(),
     bitrateMode: $("#bitrateMode").value,
     bitrate: $("#udpBitrate").value,
     bufferSize: $("#udpBuffer").value,
@@ -2118,7 +2125,6 @@ $("#startUdp").onclick = async () => {
     serviceName: $("#serviceName").value,
     encoder: $("#udpCodec").value,
     audioCodec: $("#udpAudioCodec").value,
-    fps: $("#inputFps").value,
     color: correction.color,
     sound: correction.sound,
     quality: correction.quality,
@@ -2591,6 +2597,8 @@ $("#saveSettings").onclick = () => {
     deckMode: $("#deckMode").value,
   };
   localStorage.setItem("outputSettings", JSON.stringify(s));
+  updateMainOutputBadge();
+  if (rtmpLive || udpLive) refreshLiveOutputs();
   $("#pageSettings").close();
 };
 $("#resetColor").onclick = () => {
@@ -2701,6 +2709,12 @@ applyPreviewCorrections = function (settings = correction()) {
     applyPreviewCorrections(temp);
     $("#correctionStatus").textContent =
       `LIVE PREVIEW • Auto Color ${autoColor.checked ? "ON" : "OFF"} • U ${uChannel.value} • V ${vChannel.value} • UV Gain ${uvGain.value} • Sharpness ${sharpness.value} • Softness ${softness.value} • Noise Reduction ${autoQuality.checked ? "ON" : "OFF"}`;
+    clearTimeout(window.__liveCorrectionTimer);
+    window.__liveCorrectionTimer = setTimeout(async () => {
+      if (!(rtmpLive || udpLive)) return;
+      localStorage.setItem("correctionSettings", JSON.stringify(temp));
+      await refreshLiveOutputs();
+    }, 180);
   }),
 );
 $("#saveCorrection").onclick = async () => {
@@ -2726,6 +2740,8 @@ try {
     customW.value = s.w || 1920;
     customH.value = s.h || 1080;
     inputFps.value = s.fps || "source";
+    if ($("#mainAudioRate")) $("#mainAudioRate").value = s.audioRate || "48000";
+    if ($("#mainAudioChannels")) $("#mainAudioChannels").value = s.audioChannels || "2";
     videoCodec.value = s.codec || "libx264";
     audioCodec.value = s.audio || "aac";
     deckDevice.value = s.deck || "";
@@ -2786,7 +2802,10 @@ $("#detectDeck").onclick = async () => {
 };
 $("#startDeck").onclick = async () => {
   if (current < 0) return alert("முதலில் media தேர்வு செய்யவும்");
-  let [size, fps] = $("#deckMode").value.split(",");
+  let size = $("#inputRes").value;
+  if (size === "source") size = "1920x1080";
+  if (size === "custom") size = `${$("#customW").value}x${$("#customH").value}`;
+  let fps = $("#inputFps").value === "source" ? "25" : $("#inputFps").value;
   let [width, height] = size.split("x"),
     correction = JSON.parse(localStorage.getItem("correctionSettings") || "{}");
   let r = await window.playoutAPI.startDeckLink({
@@ -2795,12 +2814,16 @@ $("#startDeck").onclick = async () => {
     width,
     height,
     fps,
+    resolution: makeOutputFilter(false),
+    audioRate: $("#mainAudioRate").value,
+    audioChannels: $("#mainAudioChannels").value,
     cg: cgConfig(),
     color: correction.color,
     sound: correction.sound,
   });
   $("#deckStatus").textContent = r.message;
 };
+setTimeout(updateMainOutputBadge, 0);
 $(".screen").insertAdjacentHTML(
   "afterbegin",
   '<div class="mcr-bars" aria-label="MCR standby colour bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><strong>SR MUSIX HD • STANDBY</strong></div>',
@@ -2929,6 +2952,15 @@ function syncAudioConsole() {
     (f) => ($("#eqOut" + f).value = $("#eq" + f).value + " dB"),
   );
   applyPreviewCorrections(correctionFromControls());
+  clearTimeout(window.__liveAudioTimer);
+  window.__liveAudioTimer = setTimeout(async () => {
+    if (!(rtmpLive || udpLive)) return;
+    localStorage.setItem(
+      "correctionSettings",
+      JSON.stringify(correctionFromControls()),
+    );
+    await refreshLiveOutputs();
+  }, 180);
 }
 [
   "audioMaster2",

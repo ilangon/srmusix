@@ -1,4 +1,4 @@
-name: Build SR MUSIX V3.6.1 Release
+name: Build SR MUSIX V3.7.0 Release
 
 on:
   workflow_dispatch:
@@ -41,13 +41,18 @@ jobs:
       - name: Build Windows portable folder
         working-directory: playout
         run: npx electron-builder --win dir --x64
-      - name: Create one portable ZIP
+      - name: Create one Desktop plus Source ZIP
         shell: powershell
-        run: Compress-Archive -Path 'playout\dist\win-unpacked' -DestinationPath 'SR_MUSIX_HD_Playout_V3.6.1_Windows_x64_Full_Codecs.zip' -CompressionLevel Optimal
-      - name: Publish V3.6.1 Release
+        run: |
+          New-Item -ItemType Directory -Force -Path 'release\Windows_Desktop' | Out-Null
+          New-Item -ItemType Directory -Force -Path 'release\Desktop_Web_Source' | Out-Null
+          Copy-Item 'playout\dist\win-unpacked\*' 'release\Windows_Desktop' -Recurse -Force
+          @('index.html','app.js','main.js','preload.js','style.css','udp.css','v32.css','package.json','package-lock.json','renderer-smoke-test.js','README_TAMIL.txt','WEB_AND_DESKTOP_SOURCE_README_TAMIL.txt','BUILD_WINDOWS_EXE.bat','START_WINDOWS.bat','CHECK_FFMPEG_SUPPORT.bat','INSTALL_FFMPEG_WINDOWS.bat','PREPARE_FULL_FFMPEG_WINDOWS.ps1') | ForEach-Object { Copy-Item "playout\$_" 'release\Desktop_Web_Source' -Force }
+          Compress-Archive -Path 'release\*' -DestinationPath 'SR_MUSIX_HD_Playout_V3.7.0_Windows_x64_Full_Codecs.zip' -CompressionLevel Optimal
+      - name: Publish V3.7.0 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.6.1
-          name: SR MUSIX HD Playout V3.6.1
-          body: Full-codec Windows portable build with automatic/manual CPU and GPU decoder selection, decoder testing, hardware fallback, and M2B/M2P/VOB/VOP compatibility routing.
-          files: SR_MUSIX_HD_Playout_V3.6.1_Windows_x64_Full_Codecs.zip
+          tag_name: v3.7.0
+          name: SR MUSIX HD Playout V3.7.0
+          body: One package containing the Windows desktop app plus complete shared Desktop/Web source. Includes seamless RTMP/UDP/SRT relay updates, common program output format, live correction propagation, fast legacy decoder path, CPU/GPU selection and bundled Full FFmpeg.
+          files: SR_MUSIX_HD_Playout_V3.7.0_Windows_x64_Full_Codecs.zip

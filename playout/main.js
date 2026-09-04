@@ -14,7 +14,9 @@ const http = require("http");
 const crypto = require("crypto");
 let ffmpegProcess = null,
   udpProcess = null,
-  previewProcess = null;
+  previewProcess = null,
+  rtmpFeedProcess = null,
+  udpFeedProcess = null;
 const previewProcesses = new Set();
 let activeEngineConfig = { decodeEngine: "auto-lowcpu", encodeEngine: "auto" };
 const decodeChoiceCache = new Map(),
@@ -199,7 +201,7 @@ async function testDecoder(file, choice) {
       "-v",
       "error",
       "-t",
-      "0.8",
+      "0.25",
       ...choice.args,
       "-i",
       file,
@@ -213,8 +215,20 @@ async function testDecoder(file, choice) {
   return r.ok;
 }
 async function selectDecoder(file, mode = "auto-lowcpu") {
-  const key = `${mode}|${file}`;
+  const legacy = /\.(vob|vop|mpg|mpeg|mpe|dat|m2p|m2b|m2v|bop|b80)(?:\?|$)/i.test(file);
+  if (legacy && ["auto", "auto-lowcpu", "cpu"].includes(mode))
+    return { name: "FFmpeg MPEG Fast Path", args: ["-threads", "2"] };
+  const ext = path.extname(String(file).split("?")[0]).toLowerCase();
+  const key = `${mode}|${ext || "network"}`;
   if (decodeChoiceCache.has(key)) return decodeChoiceCache.get(key);
+  if (["auto", "auto-lowcpu", "safe"].includes(mode)) {
+    const oldSoftware = [".avi", ".wmv", ".asf", ".divx", ".flv", ".3gp", ".ogv"];
+    const instant = oldSoftware.includes(ext)
+      ? { name: "FFmpeg Compatibility Fast Path", args: ["-threads", "2"] }
+      : { name: "FFmpeg Hardware Auto + CPU Fallback", args: ["-hwaccel", "auto", "-threads", "2"] };
+    decodeChoiceCache.set(key, instant);
+    return instant;
+  }
   for (const choice of decodeCandidates(mode))
     if (await testDecoder(file, choice)) {
       decodeChoiceCache.set(key, choice);
@@ -533,7 +547,7 @@ function createWindow() {
 }
 app.whenReady().then(createWindow);
 app.on("before-quit", () => {
-  [ffmpegProcess, udpProcess, previewProcess].forEach((p) => {
+  [ffmpegProcess, udpProcess, previewProcess, rtmpFeedProcess, udpFeedProcess].forEach((p) => {
     try {
       p && p.kill();
     } catch {}
@@ -997,18 +1011,56 @@ ipcMain.handle("pick-font", async () => {
   });
   return r.canceled || !r.filePaths.length ? null : r.filePaths[0];
 });
+
+async function startProgramFeed(kind, cfg) {
+  const port = kind === "rtmp" ? 39101 : 39102;
+  const old = kind === "rtmp" ? rtmpFeedProcess : udpFeedProcess;
+  const resolved = await resolveNetworkInput(cfg.file);
+  if (!resolved.ok) return { ok: false, message: resolved.error };
+  const decoder = await selectDecoder(resolved.url, cfg.decodeEngine || "auto-lowcpu");
+  const comp = composition(cfg);
+  const seek = Number(cfg.startAt) > 0 ? ["-ss", String(cfg.startAt)] : [];
+  const limit = Number(cfg.endAt) > Number(cfg.startAt || 0)
+    ? ["-t", String(Number(cfg.endAt) - Number(cfg.startAt || 0))]
+    : [];
+  const fps = cfg.fps && cfg.fps !== "source" ? ["-r", String(cfg.fps)] : [];
+  const args = [
+    "-hide_banner", "-loglevel", "warning", "-re", "-fflags", "+genpts+discardcorrupt",
+    ...seek, ...decoder.args, "-i", resolved.url,
+    ...comp.inputs, ...comp.filters, ...comp.maps, ...audioFilters(cfg), ...limit, ...fps,
+    "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
+    "-pix_fmt", "yuv420p", "-g", "25", "-b:v", "10M", "-maxrate", "12M", "-bufsize", "4M",
+    "-c:a", "aac", "-b:a", "192k", "-ar", String(cfg.audioRate || 48000),
+    "-ac", String(cfg.sound?.mono ? 1 : cfg.audioChannels || 2),
+    "-mpegts_flags", "+resend_headers", "-muxdelay", "0", "-f", "mpegts",
+    `udp://127.0.0.1:${port}?pkt_size=1316`,
+  ];
+  const feed = startChild("ffmpeg", args, { requested: cfg.ffmpeg });
+  feed.on("close", () => {
+    if (kind === "rtmp" && rtmpFeedProcess === feed) rtmpFeedProcess = null;
+    if (kind === "udp" && udpFeedProcess === feed) udpFeedProcess = null;
+  });
+  if (kind === "rtmp") rtmpFeedProcess = feed;
+  else udpFeedProcess = feed;
+  // Keep the old producer alive until the replacement has had time to open,
+  // so the permanent output relay never loses its program input during a cut.
+  if (old) setTimeout(() => old.kill(), 450);
+  return { ok: true };
+}
+
 ipcMain.handle("start-rtmp", async (_, cfg) => {
-  if (ffmpegProcess)
-    return { ok: false, message: "An RTMP stream is already running" };
   if (!cfg.file || !/^rtmps?:\/\//i.test(String(cfg.url || "")))
     return {
       ok: false,
       message:
         "Select media and paste one complete RTMP/RTMPS URL including the stream key",
     };
-  const resolved = await resolveNetworkInput(cfg.file);
-  if (!resolved.ok) return { ok: false, message: resolved.error };
-  cfg.file = resolved.url;
+  if (ffmpegProcess) {
+    const switched = await startProgramFeed("rtmp", cfg);
+    return switched.ok
+      ? { ok: true, message: "RTMP LIVE • seamless source/correction update" }
+      : switched;
+  }
   let requested = cfg.encoder || "libx264";
   const hevc = /hevc|265/.test(requested);
   requested =
@@ -1018,7 +1070,6 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
         : "libx264"
       : requested;
   const enc = await selectEncoder(requested),
-    decoder = await selectDecoder(cfg.file, cfg.decodeEngine || "auto-lowcpu"),
     aud = cfg.audioCodec === "copy" ? "aac" : cfg.audioCodec || "aac";
   const pre = ["libx264", "libx265"].includes(enc)
     ? [
@@ -1028,7 +1079,6 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
         "2",
       ]
     : [];
-  const comp = composition(cfg);
   const available = await capture("ffmpeg", ["-hide_banner", "-encoders"]);
   if (!available.ok)
     return {
@@ -1036,11 +1086,6 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
       message:
         "Full FFmpeg is not available. Open Settings and install Full FFmpeg.",
     };
-  const seek = Number(cfg.startAt) > 0 ? ["-ss", String(cfg.startAt)] : [],
-    limit =
-      Number(cfg.endAt) > Number(cfg.startAt || 0)
-        ? ["-t", String(Number(cfg.endAt) - Number(cfg.startAt || 0))]
-        : [];
   const br = cfg.bitrate || "4500k",
     buf = cfg.bufferSize || "9000k",
     bind = cfg.localAddress ? ["-local_addr", cfg.localAddress] : [];
@@ -1049,18 +1094,11 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
     [
       "-re",
       "-fflags",
-      "+genpts",
-      ...seek,
-      ...decoder.args,
-      "-stream_loop",
-      "-1",
+      "+genpts+discardcorrupt",
+      "-use_wallclock_as_timestamps", "1",
+      "-thread_queue_size", "4096",
       "-i",
-      cfg.file,
-      ...comp.inputs,
-      ...comp.filters,
-      ...comp.maps,
-      ...audioFilters(cfg),
-      ...limit,
+      "udp://127.0.0.1:39101?fifo_size=1000000&overrun_nonfatal=1",
       "-c:v",
       enc,
       ...pre,
@@ -1079,7 +1117,9 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
       "-b:a",
       cfg.audioBitrate || "160k",
       "-ar",
-      "48000",
+      String(cfg.audioRate || 48000),
+      "-ac",
+      String(cfg.sound?.mono ? 1 : cfg.audioChannels || 2),
       ...bind,
       "-f",
       "flv",
@@ -1092,6 +1132,12 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
   ffmpegProcess.on("close", () => {
     ffmpegProcess = null;
   });
+  const feed = await startProgramFeed("rtmp", cfg);
+  if (!feed.ok) {
+    ffmpegProcess.kill();
+    ffmpegProcess = null;
+    return feed;
+  }
   await new Promise((r) => setTimeout(r, 900));
   if (!ffmpegProcess)
     return {
@@ -1106,6 +1152,10 @@ ipcMain.handle("start-rtmp", async (_, cfg) => {
   };
 });
 ipcMain.handle("stop-rtmp", async () => {
+  if (rtmpFeedProcess) {
+    rtmpFeedProcess.kill();
+    rtmpFeedProcess = null;
+  }
   if (ffmpegProcess) {
     ffmpegProcess.kill();
     ffmpegProcess = null;
@@ -1113,8 +1163,6 @@ ipcMain.handle("stop-rtmp", async () => {
   return { ok: true };
 });
 ipcMain.handle("start-udp", async (_, cfg) => {
-  if (udpProcess)
-    return { ok: false, message: "UDP output ஏற்கனவே இயங்குகிறது" };
   if (
     !cfg.file ||
     (cfg.protocol !== "srt" && (!cfg.ip || !cfg.port)) ||
@@ -1125,6 +1173,12 @@ ipcMain.handle("start-udp", async (_, cfg) => {
       message:
         "Media and a valid UDP/RTP destination or complete SRT URL are required",
     };
+  if (udpProcess) {
+    const switched = await startProgramFeed("udp", cfg);
+    return switched.ok
+      ? { ok: true, message: "UDP/SRT LIVE • seamless source/correction update" }
+      : switched;
+  }
   const resolved = await resolveNetworkInput(cfg.file);
   if (!resolved.ok) return { ok: false, message: resolved.error };
   cfg.file = resolved.url;
@@ -1133,14 +1187,9 @@ ipcMain.handle("start-udp", async (_, cfg) => {
     protocol === "srt"
       ? cfg.srtUrl
       : `${protocol}://${cfg.ip}:${cfg.port}?pkt_size=1316&ttl=${cfg.ttl || 16}&buffer_size=65535${cfg.localAddress ? "&localaddr=" + encodeURIComponent(cfg.localAddress) : ""}`;
-  const comp = composition(cfg);
   const requestedEncoder =
     cfg.encoder === "copy" && cfg.cg ? "libx264" : cfg.encoder || "libx264";
   const encoder = await selectEncoder(requestedEncoder);
-  const decoder = await selectDecoder(
-    cfg.file,
-    cfg.decodeEngine || "auto-lowcpu",
-  );
   const preset = ["libx264", "libx265"].includes(encoder)
     ? [
         "-preset",
@@ -1151,12 +1200,6 @@ ipcMain.handle("start-udp", async (_, cfg) => {
     : [];
   const fps = cfg.fps && cfg.fps !== "source" ? ["-r", String(cfg.fps)] : [];
   const audio = cfg.audioCodec || "aac";
-  const af = audioFilters(cfg);
-  const seek = Number(cfg.startAt) > 0 ? ["-ss", String(cfg.startAt)] : [],
-    limit =
-      Number(cfg.endAt) > Number(cfg.startAt || 0)
-        ? ["-t", String(Number(cfg.endAt) - Number(cfg.startAt || 0))]
-        : [];
   const br = cfg.bitrate || "8M",
     rate =
       cfg.bitrateMode === "vbr"
@@ -1165,18 +1208,11 @@ ipcMain.handle("start-udp", async (_, cfg) => {
   const args = [
     "-re",
     "-fflags",
-    "+genpts",
-    ...seek,
-    ...decoder.args,
-    "-stream_loop",
-    "-1",
+    "+genpts+discardcorrupt",
+    "-use_wallclock_as_timestamps", "1",
+    "-thread_queue_size", "4096",
     "-i",
-    cfg.file,
-    ...comp.inputs,
-    ...comp.filters,
-    ...comp.maps,
-    ...af,
-    ...limit,
+    "udp://127.0.0.1:39102?fifo_size=1000000&overrun_nonfatal=1",
     ...fps,
     "-c:v",
     encoder,
@@ -1195,9 +1231,9 @@ ipcMain.handle("start-udp", async (_, cfg) => {
     "-b:a",
     cfg.audioBitrate || "192k",
     "-ar",
-    "48000",
+    String(cfg.audioRate || 48000),
     "-ac",
-    cfg.sound && cfg.sound.mono ? "1" : "2",
+    String(cfg.sound && cfg.sound.mono ? 1 : cfg.audioChannels || 2),
     "-mpegts_transport_stream_id",
     String(cfg.tsId || 1),
     "-mpegts_original_network_id",
@@ -1237,6 +1273,12 @@ ipcMain.handle("start-udp", async (_, cfg) => {
   udpProcess.on("close", () => {
     udpProcess = null;
   });
+  const feed = await startProgramFeed("udp", cfg);
+  if (!feed.ok) {
+    udpProcess.kill();
+    udpProcess = null;
+    return feed;
+  }
   await new Promise((r) => setTimeout(r, 1200));
   if (
     !udpProcess &&
@@ -1272,6 +1314,10 @@ ipcMain.handle("start-udp", async (_, cfg) => {
   };
 });
 ipcMain.handle("stop-udp", async () => {
+  if (udpFeedProcess) {
+    udpFeedProcess.kill();
+    udpFeedProcess = null;
+  }
   if (udpProcess) {
     udpProcess.kill();
     udpProcess = null;
