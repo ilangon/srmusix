@@ -233,6 +233,13 @@ function cgConfig() {
     nextText: current + 1 < list.length ? title(list[current + 1]) : "—",
     ticker: $("#tickerToggle").checked,
     tickerText: $("#tickerInput").value,
+    extraText: $("#cgExtraText")?.value || "",
+    extraTextVisible: !!$("#cgExtraTextVisible")?.checked,
+    scrollText: $("#cgScrollText")?.value || "",
+    scrollVisible: !!$("#cgScrollVisible")?.checked,
+    clockVisible: !!$("#cgClockVisible")?.checked,
+    shapeVisible: !!$("#cgShapeVisible")?.checked,
+    shapeColor: $("#cgShapeColor")?.value || "#1265b5",
   };
 }
 $(".screen").insertAdjacentHTML(
@@ -2327,6 +2334,47 @@ $("#pageCG h2").insertAdjacentHTML(
   "afterend",
   `<fieldset><legend>Logo / Animated CG</legend><button id="pickLogo" class="primary">SELECT LOGO / SEQUENCE</button><small id="logoFileStatus">${logoFile ? logoFile.path : "No logo file selected"}</small><button id="pickFont">SELECT CG FONT</button><small id="fontFileStatus">${cgFontFile || "Automatic: Nirmala UI / Segoe UI / Arial"}</small><div class="udp-grid"><label>Width<input id="logoWidth" type="number" value="220"></label><label>Opacity<input id="logoOpacity" type="range" min="0" max="1" step="0.05" value="1"></label><label>Position<select id="logoPosition"><option value="tr">Top Right</option><option value="tl">Top Left</option><option value="br">Bottom Right</option><option value="bl">Bottom Left</option></select></label><label><input id="logoManual" type="checkbox"> Manual X/Y axis</label><label>X Axis<input id="logoX" type="number" value="30"></label><label>Y Axis<input id="logoY" type="number" value="30"></label></div><p class="hint">TTF, OTF, TTC Windows fonts support. PNG sequence தேர்வுக்கு numbered PNG files அனைத்தையும் select செய்யவும்.</p></fieldset>`,
 );
+$("#pageCG h2").insertAdjacentHTML(
+  "afterend",
+  '<fieldset class="cg-toolbox"><legend>CG ELEMENTS & PROJECT TOOLS</legend><div class="cg-tool-grid"><button id="cgSelect">SELECT</button><button id="cgEdit">EDIT</button><button id="cgAddText">＋ TEXT</button><button id="cgAddImage">＋ IMAGE / LOGO</button><button id="cgAddSequence">＋ SEQUENCE</button><button id="cgAddFlash">＋ FLASH → CONVERT</button><button id="cgAddVideo">＋ VIDEO</button><label><input id="cgShapeVisible" type="checkbox"> SHAPE / BOX</label><label><input id="cgClockVisible" type="checkbox"> DIGITAL CLOCK</label><label><input id="cgScrollVisible" type="checkbox"> SCROLL / CRAWL</label></div><div class="udp-grid"><label><input id="cgExtraTextVisible" type="checkbox"> Extra Text<input id="cgExtraText" value="SR MUSIX HD"></label><label>Scroll Text<input id="cgScrollText" value="SR MUSIX HD • Breaking News •"></label><label>Shape Colour<input id="cgShapeColor" type="color" value="#1265b5"></label><label>Stretch / Fit<select id="cgStretch"><option value="contain">Fit</option><option value="cover">Fill / Crop</option><option value="fill">Stretch</option></select></label></div><div class="rtmp-buttons"><button id="cgMoveFront">MOVE TO FRONT</button><button id="cgMoveBack">MOVE TO BACK</button><button id="cgEffects">EFFECTS</button><button id="cgChannelPreview">CHANNEL INFO PREVIEW</button><button id="cgMainResize">MAIN VIDEO RESIZE</button><button id="cgSaveLayout">SET LAYOUT</button><button id="cgGetLayout">GET LAYOUT</button><button id="cgExportProject">EXPORT CG PROJECT</button><button id="cgImportProject">IMPORT CG PROJECT</button><button id="cgRemoveExtras" class="action-red">REMOVE EXTRA ELEMENTS</button></div><p class="hint">All enabled elements are rendered into Preview and RTMP/UDP/SRT program output.</p></fieldset>',
+);
+$(".screen").insertAdjacentHTML(
+  "beforeend",
+  '<div id="cgShapeLayer"></div><div id="cgExtraLayer">SR MUSIX HD</div><div id="cgClockLayer"></div><div id="cgScrollLayer"><span>SR MUSIX HD • Breaking News •</span></div>',
+);
+function updateAdvancedCGPreview() {
+  $("#cgShapeLayer").style.display = $("#cgShapeVisible").checked ? "block" : "none";
+  $("#cgShapeLayer").style.background = $("#cgShapeColor").value;
+  $("#cgExtraLayer").style.display = $("#cgExtraTextVisible").checked ? "block" : "none";
+  $("#cgExtraLayer").textContent = $("#cgExtraText").value;
+  $("#cgClockLayer").style.display = $("#cgClockVisible").checked ? "block" : "none";
+  $("#cgScrollLayer").style.display = $("#cgScrollVisible").checked ? "block" : "none";
+  $("#cgScrollLayer span").textContent = $("#cgScrollText").value;
+}
+setInterval(() => {
+  if ($("#cgClockLayer")) $("#cgClockLayer").textContent = new Date().toLocaleTimeString();
+}, 500);
+["cgShapeVisible","cgClockVisible","cgScrollVisible","cgExtraTextVisible","cgExtraText","cgScrollText","cgShapeColor"].forEach(
+  (id) => $("#" + id).addEventListener("input", updateAdvancedCGPreview),
+);
+["cgAddImage","cgAddSequence","cgAddFlash","cgAddVideo"].forEach(
+  (id) => ($("#" + id).onclick = () => $("#pickLogo").click()),
+);
+$("#cgAddText").onclick = () => { $("#cgExtraTextVisible").checked = true; $("#cgExtraText").focus(); updateAdvancedCGPreview(); };
+$("#cgSelect").onclick = () => $("#cgDesignerCanvas").scrollIntoView({ behavior: "smooth", block: "center" });
+$("#cgEdit").onclick = () => $("#cgExtraText").focus();
+$("#cgMoveFront").onclick = () => ["cgExtraLayer","cgClockLayer","cgScrollLayer"].forEach((id) => $("#" + id).style.zIndex = "8");
+$("#cgMoveBack").onclick = () => ["cgExtraLayer","cgClockLayer","cgScrollLayer"].forEach((id) => $("#" + id).style.zIndex = "2");
+$("#cgEffects").onclick = () => { $("#pageCG").close(); $("#pageCorrection").showModal(); };
+$("#cgChannelPreview").onclick = () => { $("#pageCG").close(); $(".screen").scrollIntoView({ behavior: "smooth", block: "center" }); };
+$("#cgMainResize").onclick = () => { $("#pageCG").close(); $("#pageSettings").showModal(); };
+$("#cgStretch").onchange = () => { $("#aspectMode").value = $("#cgStretch").value; applyAspect(); };
+$("#cgSaveLayout").onclick = () => localStorage.setItem("cgSavedProject", JSON.stringify(cgConfig()));
+$("#cgGetLayout").onclick = () => { let c = JSON.parse(localStorage.getItem("cgSavedProject") || "null"); if (c) { $("#cgExtraText").value = c.extraText || ""; $("#cgScrollText").value = c.scrollText || ""; $("#cgExtraTextVisible").checked = !!c.extraTextVisible; $("#cgScrollVisible").checked = !!c.scrollVisible; $("#cgClockVisible").checked = !!c.clockVisible; $("#cgShapeVisible").checked = !!c.shapeVisible; updateAdvancedCGPreview(); } };
+$("#cgExportProject").onclick = async () => window.playoutAPI.saveProjectFile({ type: "sr-musix-cg", cg: cgConfig() });
+$("#cgImportProject").onclick = async () => { let r = await window.playoutAPI.loadProjectFile(); if (r.ok && r.data?.cg) { localStorage.setItem("cgSavedProject", JSON.stringify(r.data.cg)); $("#cgGetLayout").click(); } };
+$("#cgRemoveExtras").onclick = () => { ["cgShapeVisible","cgClockVisible","cgScrollVisible","cgExtraTextVisible"].forEach((id) => $("#" + id).checked = false); updateAdvancedCGPreview(); };
+updateAdvancedCGPreview();
 $("#logoWidth").parentElement.insertAdjacentHTML(
   "afterend",
   '<label>Height (0 = Auto)<input id="logoHeight" type="number" min="0" value="0"></label>',
@@ -2554,6 +2602,7 @@ $("#applyCG").onclick = async () => {
     watermarkOpacity: $("#watermarkOpacity").value,
     watermarkSize: $("#watermarkSize").value,
     positions: cgPositions,
+    ...cgConfig(),
   };
   localStorage.setItem("cgLogoLayout", JSON.stringify(savedCG));
   localStorage.setItem("cgSettings", JSON.stringify(savedCG));
@@ -2604,6 +2653,14 @@ try {
       cgPositions = c.positions;
       localStorage.setItem("cgPositions", JSON.stringify(cgPositions));
     }
+    $("#cgExtraText").value = c.extraText || "SR MUSIX HD";
+    $("#cgScrollText").value = c.scrollText || "SR MUSIX HD • Breaking News •";
+    $("#cgShapeColor").value = c.shapeColor || "#1265b5";
+    $("#cgExtraTextVisible").checked = !!c.extraTextVisible;
+    $("#cgScrollVisible").checked = !!c.scrollVisible;
+    $("#cgClockVisible").checked = !!c.clockVisible;
+    $("#cgShapeVisible").checked = !!c.shapeVisible;
+    updateAdvancedCGPreview();
     updateDesignerLogo();
   }
 } catch (e) {}

@@ -348,6 +348,16 @@ function videoFilters(cfg = {}, includeCG = true) {
       `drawbox=x=0:y=ih*${ty}:w=iw:h=42:color=0x087bdd@0.92:t=fill`,
       `drawtext=fontfile='${font}':textfile='${textAsset("ticker", c.tickerText || "SR MUSIX HD • Feel the Music • Live the Vibe!")}':fontcolor=white:fontsize=23:x=w-mod(t*120\\,w+tw):y=h*${ty}+9`,
     );
+  if (c.shapeVisible) {
+    const color = String(c.shapeColor || "#1265b5").replace("#", "0x");
+    f.push(`drawbox=x=iw*0.05:y=ih*0.12:w=iw*0.38:h=ih*0.12:color=${color}@0.78:t=fill`);
+  }
+  if (c.extraTextVisible && c.extraText)
+    f.push(`drawtext=fontfile='${font}':textfile='${textAsset("extra", c.extraText)}':fontcolor=white:fontsize=32:borderw=2:bordercolor=black@0.8:x=w*0.07:y=h*0.15`);
+  if (c.clockVisible)
+    f.push(`drawtext=fontfile='${font}':text='%{localtime\\:%H\\\\:%M\\\\:%S}':fontcolor=white:fontsize=30:borderw=2:bordercolor=black@0.8:x=w-tw-35:y=35`);
+  if (c.scrollVisible && c.scrollText)
+    f.push(`drawbox=x=0:y=ih*0.84:w=iw:h=48:color=black@0.7:t=fill`, `drawtext=fontfile='${font}':textfile='${textAsset("scroll", c.scrollText)}':fontcolor=white:fontsize=25:x=w-mod(t*150\\,w+tw):y=h*0.84+10`);
   return f.length ? ["-vf", f.join(",")] : [];
 }
 function audioFilters(cfg = {}) {
