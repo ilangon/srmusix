@@ -355,7 +355,7 @@ function videoFilters(cfg = {}, includeCG = true) {
   if (c.extraTextVisible && c.extraText)
     f.push(`drawtext=fontfile='${font}':textfile='${textAsset("extra", c.extraText)}':fontcolor=white:fontsize=32:borderw=2:bordercolor=black@0.8:x=w*0.07:y=h*0.15`);
   if (c.clockVisible)
-    f.push(`drawtext=fontfile='${font}':text='%{localtime\\:%H\\\\:%M\\\\:%S}':fontcolor=white:fontsize=30:borderw=2:bordercolor=black@0.8:x=w-tw-35:y=35`);
+    f.push(`drawtext=fontfile='${font}':text='%{localtime}':fontcolor=white:fontsize=30:borderw=2:bordercolor=black@0.8:x=w-tw-35:y=35`);
   if (c.scrollVisible && c.scrollText)
     f.push(`drawbox=x=0:y=ih*0.84:w=iw:h=48:color=black@0.7:t=fill`, `drawtext=fontfile='${font}':textfile='${textAsset("scroll", c.scrollText)}':fontcolor=white:fontsize=25:x=w-mod(t*150\\,w+tw):y=h*0.84+10`);
   return f.length ? ["-vf", f.join(",")] : [];
