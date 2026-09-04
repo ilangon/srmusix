@@ -412,6 +412,11 @@ $(".center.card .network-entry").insertAdjacentHTML(
   "afterend",
   '<section id="playlistPreviewPanel" class="source-preview playlist-preview-panel"><div><b>PLAYLIST ITEM PREVIEW — DOUBLE CLICK A SONG</b><button id="stopPlaylistPreview" class="action-red">■ STOP PREVIEW</button></div><video id="playlistPreviewPlayer" controls></video><small id="playlistPreviewStatus">Preview is independent from the On-Air player</small></section>',
 );
+// Use one compact playlist preview for both local files and URL/network items.
+$("#networkPreviewDock").style.display = "none";
+$("#previewNetworkUrl").textContent = "▶ PREVIEW URL";
+$("#addNetworkFromBox").insertAdjacentElement("beforebegin", $("#previewNetworkUrl"));
+$("#playlistPreviewPanel > div").appendChild($("#previewDecoder"));
 $(".toolbar").insertAdjacentHTML(
   "beforeend",
   '<button id="installYouTube">⬇ INSTALL YOUTUBE SUPPORT</button>',
@@ -519,8 +524,6 @@ function commonOutputConfig() {
   return {
     resolution: makeOutputFilter(false),
     fps: $("#inputFps").value,
-    audioRate: $("#mainAudioRate").value,
-    audioChannels: $("#mainAudioChannels").value,
     audioRate: $("#mainAudioRate")?.value || "48000",
     audioChannels: $("#mainAudioChannels")?.value || "2",
   };
@@ -1319,39 +1322,31 @@ async function load(i, play = false, startAt = null) {
     }
     playable = rr.url;
   }
-  let probe = await window.playoutAPI.probeMedia(playable);
-  mediaDuration = Number(probe?.format?.duration) || 0;
+  let ext = original.split("?")[0].split(".").pop().toLowerCase(),
+    legacy = [
+      "vob", "vop", "mpg", "mpeg", "mpe", "dat", "ts", "mts", "m2ts",
+      "m2p", "m2b", "m2v", "m4v", "mxf", "avi", "wmv", "asf", "divx",
+      "flv", "3gp", "ogv", "b80", "bop",
+    ];
+  // Do not block PLAY while old program streams are being inspected.
+  let probe = null;
+  if (legacy.includes(ext)) {
+    mediaDuration = Number(durationCache[original]) || 0;
+    window.playoutAPI.probeMedia(playable).then((p) => {
+      if (current === i && p?.ok) {
+        mediaDuration = Number(p.format?.duration) || mediaDuration;
+        updateMarkStatus();
+      }
+    });
+  } else {
+    probe = await window.playoutAPI.probeMedia(playable);
+    mediaDuration = Number(probe?.format?.duration) || 0;
+  }
   let mark = selectedMark(),
     begin =
       startAt == null ? Number(mark.in || 0) : Math.max(0, Number(startAt)),
     end = Number(mark.out || 0);
   previewOffset = begin;
-  let ext = original.split("?")[0].split(".").pop().toLowerCase(),
-    legacy = [
-      "vob",
-      "vop",
-      "mpg",
-      "mpeg",
-      "mpe",
-      "dat",
-      "ts",
-      "mts",
-      "m2ts",
-      "m2p",
-      "m2b",
-      "m2v",
-      "m4v",
-      "mxf",
-      "avi",
-      "wmv",
-      "asf",
-      "divx",
-      "flv",
-      "3gp",
-      "ogv",
-      "b80",
-      "bop",
-    ];
   if (network || legacy.includes(ext) || probe?.embeddedPreviewSupported === false) {
     video.pause();
     video.removeAttribute("src");
@@ -1464,8 +1459,11 @@ async function previewSourceIn(player, source) {
   let network = /^https?:\/\//i.test(source),
     youtube = /(youtube\.com|youtu\.be)/i.test(source),
     playable = source,
-    status =
-      player.id === "networkPreviewPlayer" ? $("#networkPreviewStatus") : null;
+    status = player.id === "playlistPreviewPlayer"
+      ? $("#playlistPreviewStatus")
+      : player.id === "networkPreviewPlayer"
+        ? $("#networkPreviewStatus")
+        : null;
   if (status) status.textContent = "Resolving media link…";
   if (network) {
     let resolved = await window.playoutAPI.resolveNetworkMedia(source);
@@ -1516,7 +1514,7 @@ async function previewSourceIn(player, source) {
 }
 $("#previewNetworkUrl").onclick = () =>
   previewSourceIn(
-    $("#networkPreviewPlayer"),
+    $("#playlistPreviewPlayer"),
     $("#networkUrlInput").value.trim(),
   );
 $("#stopNetworkPreview").onclick = () => {

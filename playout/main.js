@@ -21,6 +21,7 @@ const previewProcesses = new Set();
 let activeEngineConfig = { decodeEngine: "auto-lowcpu", encodeEngine: "auto" };
 const decodeChoiceCache = new Map(),
   encoderChoiceCache = new Map();
+const probeResultCache = new Map();
 let cpuSnapshot = os.cpus().map((c) => ({ ...c.times }));
 let previewServer = null,
   previewPort = 0,
@@ -437,28 +438,27 @@ async function ensurePreviewServer() {
         Number(cfg.endAt) > Number(cfg.startAt || 0)
           ? ["-t", String(Number(cfg.endAt) - Number(cfg.startAt || 0))]
           : [],
-      requested =
-        cfg.encodeEngine === "cpu"
-          ? "libx264"
-          : cfg.encodeEngine === "microsoft"
-            ? "h264_mf"
-            : "h264_nvenc",
-      enc = await selectEncoder(requested),
       decoder = await selectDecoder(cfg.file, cfg.decodeEngine),
-      preset =
-        enc === "libx264"
-          ? ["-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2"]
-          : [];
+      enc = "libx264",
+      preset = ["-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2"];
     const args = [
       "-hide_banner",
       "-loglevel",
       "warning",
       "-fflags",
-      "+genpts+discardcorrupt",
+      "+genpts+discardcorrupt+nobuffer",
+      "-flags",
+      "low_delay",
       "-err_detect",
       "ignore_err",
       ...seek,
       ...decoder.args,
+      "-probesize",
+      "256k",
+      "-analyzeduration",
+      "250000",
+      "-fpsprobesize",
+      "4",
       "-i",
       cfg.file,
       "-map",
@@ -474,7 +474,7 @@ async function ensurePreviewServer() {
       "-pix_fmt",
       "yuv420p",
       "-g",
-      "25",
+      "12",
       "-c:a",
       "aac",
       "-b:a",
@@ -486,7 +486,9 @@ async function ensurePreviewServer() {
       "-f",
       "mp4",
       "-movflags",
-      "frag_keyframe+empty_moov+default_base_moof",
+      "frag_every_frame+empty_moov+default_base_moof",
+      "-flush_packets",
+      "1",
       "pipe:1",
     ];
     const processForClient = startChild("ffmpeg", args, {
@@ -718,13 +720,20 @@ ipcMain.handle("set-auto-start", async (_, enabled) => {
 });
 ipcMain.handle(
   "probe-media",
-  async (_, file) =>
+  async (_, file) => {
+    const cached = probeResultCache.get(file);
+    if (cached) return cached;
+    return await
     new Promise((resolve) => {
       const p = startChild(
         "ffprobe",
         [
           "-v",
           "error",
+          "-probesize",
+          "256k",
+          "-analyzeduration",
+          "250000",
           "-show_entries",
           "format=format_name,duration,bit_rate:stream=index,codec_type,codec_name,codec_long_name,width,height,pix_fmt,r_frame_rate,field_order,bit_rate",
           "-of",
@@ -758,7 +767,7 @@ ipcMain.handle(
               : v.codec_name === "hevc"
                 ? "Input: HEVC/H.265. HEVC DVB receiver இல்லையெனில் H.264 output தேர்வு செய்யவும்"
                 : "Recommended DVB output: H.264 NVENC / libx264";
-          resolve({
+          const result = {
             ok: true,
             format: data.format,
             video: v || null,
@@ -767,12 +776,15 @@ ipcMain.handle(
             embeddedPreviewSupported: v
               ? ["h264", "vp8", "vp9", "av1"].includes(v.codec_name)
               : false,
-          });
+          };
+          probeResultCache.set(file, result);
+          resolve(result);
         } catch (e) {
           resolve({ ok: false, error: e.message });
         }
       });
-    }),
+    });
+  },
 );
 ipcMain.handle("set-engine-config", async (_, cfg) => {
   activeEngineConfig = { ...activeEngineConfig, ...cfg };
