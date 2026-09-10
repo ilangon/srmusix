@@ -4066,14 +4066,14 @@ public partial class MainWindow : Window
             _liveInputActive=false; _masterAvBus.EndProgramTransition(); _deckLinkBusSession?.EndProgramTransition(); throw;
         }
     }
-    internal async Task StartLiveNetworkInputAsync(string ffmpeg,string sourceUrl,string? audioDevice)
+    internal async Task StartLiveNetworkInputAsync(string ffmpeg,string sourceUrl,string? audioDevice,string? userAgent=null,string? referer=null)
     {
         if(!_onAirEnabled)return;
         _scheduledPlaylistActive=false;_activeScheduledJob=null;_activeScheduleEnd=null;_program.Stop();_programAudio.Stop();
         _masterAvBus.BeginProgramTransition();_deckLinkBusSession?.BeginProgramTransition();_masterAvBus.ResetTransitionAudio();_deckLinkBusSession?.ResetTransitionAudio();
         _liveInputActive=true;_programFile=null;_fillerActive=false;_operatorStopped=false;ProgramStateOverlay.Visibility=Visibility.Collapsed;
         ProgramNameText.Text="NETWORK LIVE INPUT";NowText.Text="NETWORK LIVE INPUT";NextText.Text="—";
-        try{await _liveCapture.StartNetworkAsync(ffmpeg,sourceUrl,audioDevice,1280,720,25);_masterAvBus.EndProgramTransition();_deckLinkBusSession?.EndProgramTransition();StatusText.Text="NETWORK LIVE INPUT • ON AIR";_=RestartArmedStreamsForCurrentProgramAsync(onlyIfStopped:true);}
+        try{await _liveCapture.StartNetworkAsync(ffmpeg,sourceUrl,audioDevice,1280,720,25,userAgent,referer);_masterAvBus.EndProgramTransition();_deckLinkBusSession?.EndProgramTransition();StatusText.Text="NETWORK LIVE INPUT • ON AIR";_=RestartArmedStreamsForCurrentProgramAsync(onlyIfStopped:true);}
         catch{_liveInputActive=false;_masterAvBus.EndProgramTransition();_deckLinkBusSession?.EndProgramTransition();throw;}
     }
     internal async Task StartLiveNdiInputAsync(string ffmpeg,string sourceName,string? audioDevice)
