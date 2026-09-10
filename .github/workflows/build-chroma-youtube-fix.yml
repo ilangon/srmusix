@@ -59,11 +59,11 @@ jobs:
             if (-not (Test-Path $file)) { throw "Required output missing: $file" }
           }
           New-Item -ItemType Directory -Force -Path "DIST" | Out-Null
-          @"
-SMART PLAYOUT v0.6.8.50.58 YouTube Chroma Fix
-This compiled application core requires a matching FFmpeg 9 x64 shared runtime.
-Use PREPARE_FFMPEG_RUNTIME.bat before creating a complete portable build.
-"@ | Set-Content "_publish\README_RUNTIME_REQUIRED.txt"
+          @(
+            "SMART PLAYOUT v0.6.8.50.58 YouTube Chroma Fix",
+            "This compiled application core requires a matching FFmpeg 9 x64 shared runtime.",
+            "Use PREPARE_FFMPEG_RUNTIME.bat before creating a complete portable build."
+          ) | Set-Content "_publish\README_RUNTIME_REQUIRED.txt"
           Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_APP_CORE.zip" -Force
           $sourceItems = Get-ChildItem -Force | Where-Object { $_.Name -notin @("_publish","DIST","PLAYOUT") }
           Compress-Archive -Path $sourceItems.FullName -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_SOURCE_PACK.zip" -Force
