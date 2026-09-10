@@ -1,0 +1,75 @@
+name: Build YouTube Chroma Preview Fix
+
+on:
+  push:
+    branches: [chroma-youtube-fix]
+    paths:
+      - "smartplayout-chroma-source/**"
+      - ".github/workflows/build-chroma-youtube-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: smartplayout-chroma-source
+    env:
+      SMARTPLAYER_SKIP_RUNTIME_PREP: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Verify YouTube chroma fix
+        run: |
+          $source = Get-Content "SmartPlayout\LiveCaptureEngine.cs" -Raw
+          if ($source -match "Network video opened, but its audio stream could not be connected") {
+            throw "Old blocking network-audio error is still present."
+          }
+          if ($source -notmatch "VIDEO ONLY FALLBACK") {
+            throw "Video-only fallback fix marker is missing."
+          }
+
+      - name: Restore
+        run: dotnet restore "SmartPlayout\SmartPlayout.csproj" -r win-x64
+
+      - name: Build Release
+        run: dotnet build "SmartPlayout\SmartPlayout.csproj" -c Release -r win-x64 --self-contained true --no-restore --no-incremental -p:UseAppHost=true -p:GenerateRuntimeConfigurationFiles=true -p:GenerateDependencyFile=true -m:1 -p:BuildInParallel=false -p:UseSharedCompilation=false
+
+      - name: Publish
+        run: dotnet publish "SmartPlayout\SmartPlayout.csproj" -c Release -r win-x64 --self-contained true --no-restore --no-build -p:UseAppHost=true -p:GenerateRuntimeConfigurationFiles=true -p:GenerateDependencyFile=true -o "_publish"
+
+      - name: Validate and package
+        run: |
+          $required = @(
+            "_publish\SMARTPlayout.exe",
+            "_publish\SMARTPlayout.runtimeconfig.json",
+            "_publish\Runtime\MediaCore\FFmpeg\ffmpeg.exe",
+            "_publish\Runtime\Tools\yt-dlp.exe",
+            "_publish\SMARTPlayout.Chroma.Worker.exe"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) { throw "Required output missing: $file" }
+          }
+          New-Item -ItemType Directory -Force -Path "DIST" | Out-Null
+          Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_PORTABLE.zip" -Force
+          $sourceItems = Get-ChildItem -Force | Where-Object { $_.Name -notin @("_publish","DIST","PLAYOUT") }
+          Compress-Archive -Path $sourceItems.FullName -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_SOURCE.zip" -Force
+          Get-FileHash "DIST\*.zip" -Algorithm SHA256 | Format-Table Path,Hash -AutoSize | Out-String | Set-Content "DIST\SHA256.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SMART-PLAYOUT-v0.6.8.50.58-YOUTUBE-CHROMA-FIX
+          path: |
+            smartplayout-chroma-source/DIST/*.zip
+            smartplayout-chroma-source/DIST/SHA256.txt
+          if-no-files-found: error
+          retention-days: 30
