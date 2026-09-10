@@ -28,6 +28,22 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Download matching FFmpeg shared runtime
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP "ffmpeg-shared.zip"
+          $expanded = Join-Path $env:RUNNER_TEMP "ffmpeg-shared"
+          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip" -OutFile $archive
+          Expand-Archive $archive $expanded -Force
+          $ffmpeg = Get-ChildItem $expanded -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          if (-not $ffmpeg) { throw "Downloaded FFmpeg package has no ffmpeg.exe" }
+          $runtime = "ffmpeg_runtime\MediaCore\win-x64"
+          New-Item -ItemType Directory -Force -Path $runtime | Out-Null
+          Copy-Item (Join-Path $ffmpeg.Directory.FullName "*") $runtime -Recurse -Force
+          $required = @("ffmpeg.exe","ffprobe.exe","avcodec-63.dll","avformat-63.dll","avutil-61.dll","avfilter-12.dll","avdevice-63.dll","swscale-10.dll","swresample-7.dll")
+          foreach ($name in $required) {
+            if (-not (Test-Path (Join-Path $runtime $name))) { throw "Matching FFmpeg 9 runtime file missing: $name" }
+          }
+
       - name: Verify YouTube chroma fix
         run: |
           $source = Get-Content "SmartPlayout\LiveCaptureEngine.cs" -Raw
@@ -47,31 +63,29 @@ jobs:
       - name: Publish
         run: dotnet publish "SmartPlayout\SmartPlayout.csproj" -c Release -r win-x64 --self-contained true --no-restore --no-build -p:UseAppHost=true -p:GenerateRuntimeConfigurationFiles=true -p:GenerateDependencyFile=true -o "_publish"
 
-      - name: Validate and package source fix
+      - name: Validate complete portable package
         run: |
           $required = @(
             "_publish\SMARTPlayout.exe",
             "_publish\SMARTPlayout.runtimeconfig.json",
+            "_publish\Runtime\MediaCore\FFmpeg\ffmpeg.exe",
+            "_publish\Runtime\MediaCore\FFmpeg\avcodec-63.dll",
+            "_publish\Runtime\MediaCore\FFmpeg\avformat-63.dll",
             "_publish\Runtime\Tools\yt-dlp.exe",
             "_publish\SMARTPlayout.Chroma.Worker.exe"
           )
           foreach ($file in $required) {
-            if (-not (Test-Path $file)) { throw "Required output missing: $file" }
+            if (-not (Test-Path $file)) { throw "Required portable output missing: $file" }
           }
           New-Item -ItemType Directory -Force -Path "DIST" | Out-Null
-          @(
-            "SMART PLAYOUT v0.6.8.50.58 YouTube Chroma Fix",
-            "This compiled application core requires a matching FFmpeg 9 x64 shared runtime.",
-            "Use PREPARE_FFMPEG_RUNTIME.bat before creating a complete portable build."
-          ) | Set-Content "_publish\README_RUNTIME_REQUIRED.txt"
-          Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_APP_CORE.zip" -Force
-          $sourceItems = Get-ChildItem -Force | Where-Object { $_.Name -notin @("_publish","DIST","PLAYOUT") }
+          Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_FULL_PORTABLE.zip" -Force
+          $sourceItems = Get-ChildItem -Force | Where-Object { $_.Name -notin @("_publish","DIST","PLAYOUT","ffmpeg_runtime") }
           Compress-Archive -Path $sourceItems.FullName -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_SOURCE_PACK.zip" -Force
           Get-FileHash "DIST\*.zip" -Algorithm SHA256 | Format-Table Path,Hash -AutoSize | Out-String | Set-Content "DIST\SHA256.txt"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SMART-PLAYOUT-v0.6.8.50.58-YOUTUBE-CHROMA-FIX
+          name: SMART-PLAYOUT-v0.6.8.50.58-YOUTUBE-CHROMA-FIX-FULL
           path: |
             smartplayout-chroma-source/DIST/*.zip
             smartplayout-chroma-source/DIST/SHA256.txt
