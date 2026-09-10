@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -17,6 +19,7 @@ public sealed class LiveCaptureEngine : IDisposable
     public const string EmbeddedAudio = "@DECKLINK_EMBEDDED_AUDIO@";
     Process? _video, _audio; CancellationTokenSource? _cts;
     NamedPipeServerStream? _embeddedAudioPipe;
+    readonly ConcurrentDictionary<int,StringBuilder> _processErrors=new();
     long _lastVideoFrameTick; int _signalLost;
     public event Action<BitmapSource>? FrameReady;
     public event Action<byte[],int>? PcmReady;
@@ -88,7 +91,7 @@ public sealed class LiveCaptureEngine : IDisposable
         if(_video.HasExited) throw new InvalidOperationException("DeckLink LIVE capture could not start. Verify a DeckLink-capable FFmpeg input runtime, Desktop Video driver, connector and video mode.");
     }
 
-    public async Task StartNetworkAsync(string ffmpeg,string sourceUrl,string? audioDevice,int width=1280,int height=720,double fps=25)
+    public async Task StartNetworkAsync(string ffmpeg,string sourceUrl,string? audioDevice,int width=1280,int height=720,double fps=25,string? userAgent=null,string? referer=null)
     {
         Stop();
         if(!File.Exists(ffmpeg))throw new FileNotFoundException("FFmpeg not found",ffmpeg);
@@ -99,6 +102,11 @@ public sealed class LiveCaptureEngine : IDisposable
         StartSignalWatchdog(_cts.Token);
         bool sourceAudio=string.Equals(audioDevice,EmbeddedAudio,StringComparison.Ordinal);
         string inputOptions=uri.Scheme.Equals("rtsp",StringComparison.OrdinalIgnoreCase)?"-rtsp_transport tcp -rw_timeout 10000000 ":"-rw_timeout 10000000 ";
+        if(uri.Scheme.Equals("http",StringComparison.OrdinalIgnoreCase)||uri.Scheme.Equals("https",StringComparison.OrdinalIgnoreCase))
+        {
+            if(!string.IsNullOrWhiteSpace(userAgent))inputOptions+=$"-user_agent \"{Esc(userAgent)}\" ";
+            if(!string.IsNullOrWhiteSpace(referer))inputOptions+=$"-referer \"{Esc(referer)}\" ";
+        }
 
         // Keep network video independent from audio. The old command wrote video to
         // stdout and audio to a Windows named pipe from the same FFmpeg process.
@@ -137,8 +145,14 @@ public sealed class LiveCaptureEngine : IDisposable
         else audioStatus="OFF";
 
         StatusChanged?.Invoke($"NETWORK LIVE • {uri.Scheme.ToUpperInvariant()} • AUDIO {audioStatus}");
-        await Task.Delay(180);
-        if(_video.HasExited)throw new InvalidOperationException("Network source could not start. Verify URL, protocol and network access.");
+        await Task.Delay(350);
+        if(_video.HasExited)
+        {
+            var failed=_video;
+            string detail=LastProcessError(failed);
+            Stop();
+            throw new InvalidOperationException("Network source could not start. Verify URL, protocol and network access."+(!string.IsNullOrWhiteSpace(detail)?" FFmpeg: "+detail:""));
+        }
     }
     public async Task StartNdiAsync(string ffmpeg,string sourceName,string? audioDevice,int width=1280,int height=720,double fps=25)
     {
@@ -175,10 +189,28 @@ public sealed class LiveCaptureEngine : IDisposable
         _audio=Start(ffmpeg,args,true);_=Task.Run(()=>AudioLoop(_audio,token));
     }
 
-    static Process Start(string exe,string args,bool stdout)
+    Process Start(string exe,string args,bool stdout)
     {
         var p=new Process{StartInfo=new ProcessStartInfo(exe,args){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=stdout,RedirectStandardError=true}};
-        p.Start(); _=Task.Run(async()=>{try{await p.StandardError.ReadToEndAsync();}catch{}}); return p;
+        var error=new StringBuilder();
+        p.ErrorDataReceived+=(_,e)=>{if(e.Data==null)return;lock(error){if(error.Length<4000)error.AppendLine(e.Data);}};
+        p.Start();
+        _processErrors[p.Id]=error;
+        p.BeginErrorReadLine();
+        return p;
+    }
+    string LastProcessError(Process? process)
+    {
+        try
+        {
+            if(process==null||!_processErrors.TryGetValue(process.Id,out var error))return "";
+            lock(error)
+            {
+                string value=error.ToString().Replace('\r',' ').Replace('\n',' ').Trim();
+                return value.Length<=1200?value:value[..1200];
+            }
+        }
+        catch{return "";}
     }
     async Task VideoLoop(Process p,int w,int h,CancellationToken ct)
     {
