@@ -47,12 +47,11 @@ jobs:
       - name: Publish
         run: dotnet publish "SmartPlayout\SmartPlayout.csproj" -c Release -r win-x64 --self-contained true --no-restore --no-build -p:UseAppHost=true -p:GenerateRuntimeConfigurationFiles=true -p:GenerateDependencyFile=true -o "_publish"
 
-      - name: Validate and package
+      - name: Validate and package source fix
         run: |
           $required = @(
             "_publish\SMARTPlayout.exe",
             "_publish\SMARTPlayout.runtimeconfig.json",
-            "_publish\Runtime\MediaCore\FFmpeg\ffmpeg.exe",
             "_publish\Runtime\Tools\yt-dlp.exe",
             "_publish\SMARTPlayout.Chroma.Worker.exe"
           )
@@ -60,9 +59,14 @@ jobs:
             if (-not (Test-Path $file)) { throw "Required output missing: $file" }
           }
           New-Item -ItemType Directory -Force -Path "DIST" | Out-Null
-          Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_PORTABLE.zip" -Force
+          @"
+SMART PLAYOUT v0.6.8.50.58 YouTube Chroma Fix
+This compiled application core requires a matching FFmpeg 9 x64 shared runtime.
+Use PREPARE_FFMPEG_RUNTIME.bat before creating a complete portable build.
+"@ | Set-Content "_publish\README_RUNTIME_REQUIRED.txt"
+          Compress-Archive -Path "_publish\*" -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_APP_CORE.zip" -Force
           $sourceItems = Get-ChildItem -Force | Where-Object { $_.Name -notin @("_publish","DIST","PLAYOUT") }
-          Compress-Archive -Path $sourceItems.FullName -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_SOURCE.zip" -Force
+          Compress-Archive -Path $sourceItems.FullName -DestinationPath "DIST\SMART_PLAYOUT_v0_6_8_50_58_YOUTUBE_CHROMA_FIX_SOURCE_PACK.zip" -Force
           Get-FileHash "DIST\*.zip" -Algorithm SHA256 | Format-Table Path,Hash -AutoSize | Out-String | Set-Content "DIST\SHA256.txt"
 
       - uses: actions/upload-artifact@v4
