@@ -1,0 +1,47 @@
+name: Unpack SmartPlayout source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/unpack-smartplayout.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Safely extract source pack
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib, shutil, zipfile
+          archive = pathlib.Path("SMART_PLAYOUT_v0_6_8_50_57_CHROMA_OPEN_FIX_SOURCE_PACK.zip")
+          target = pathlib.Path("smartplayout-chroma-source")
+          if target.exists():
+              shutil.rmtree(target)
+          target.mkdir()
+          root = target.resolve()
+          with zipfile.ZipFile(archive) as z:
+              for info in z.infolist():
+                  dest = (target / info.filename).resolve()
+                  if root != dest and root not in dest.parents:
+                      raise RuntimeError(f"Unsafe ZIP entry: {info.filename}")
+              z.extractall(target)
+          PY
+
+      - name: Publish extracted source branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c chroma-youtube-fix
+          git add smartplayout-chroma-source
+          git commit -m "Extract SmartPlayout chroma source pack"
+          git push origin chroma-youtube-fix
