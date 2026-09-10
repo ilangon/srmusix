@@ -94,29 +94,51 @@ public sealed class LiveCaptureEngine : IDisposable
         if(!File.Exists(ffmpeg))throw new FileNotFoundException("FFmpeg not found",ffmpeg);
         if(!Uri.TryCreate(sourceUrl,UriKind.Absolute,out var uri)||!new[]{"http","https","rtsp","rtmp","rtmps","srt","udp","rtp"}.Contains(uri.Scheme,StringComparer.OrdinalIgnoreCase))
             throw new InvalidOperationException("Enter a valid HTTP/HLS, RTSP, RTMP, SRT, UDP or RTP source URL.");
-        _cts=new CancellationTokenSource();StartSignalWatchdog(_cts.Token);string? pipePath=null;bool sourceAudio=string.Equals(audioDevice,EmbeddedAudio,StringComparison.Ordinal);
+
+        _cts=new CancellationTokenSource();
+        StartSignalWatchdog(_cts.Token);
+        bool sourceAudio=string.Equals(audioDevice,EmbeddedAudio,StringComparison.Ordinal);
+        string inputOptions=uri.Scheme.Equals("rtsp",StringComparison.OrdinalIgnoreCase)?"-rtsp_transport tcp -rw_timeout 10000000 ":"-rw_timeout 10000000 ";
+
+        // Keep network video independent from audio. The old command wrote video to
+        // stdout and audio to a Windows named pipe from the same FFmpeg process.
+        // When a YouTube/direct stream had no usable audio track (or the pipe open
+        // was delayed), the eight-second audio timeout stopped an already-working
+        // video preview. Video is now authoritative and source audio is optional.
+        string videoArgs=$"-hide_banner -loglevel warning -fflags +genpts {inputOptions}-i \"{Esc(sourceUrl)}\" -map 0:v:0 -an -vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,format=bgra\" -pix_fmt bgra -f rawvideo pipe:1";
+        _video=Start(ffmpeg,videoArgs,true);
+        _=Task.Run(()=>VideoLoop(_video,width,height,_cts.Token));
+
+        string audioStatus;
         if(sourceAudio)
         {
-            string pipeName="smartplayout_network_audio_"+Guid.NewGuid().ToString("N");pipePath=$@"\\.\pipe\{pipeName}";
-            _embeddedAudioPipe=new NamedPipeServerStream(pipeName,PipeDirection.In,1,PipeTransmissionMode.Byte,PipeOptions.Asynchronous,65536,65536);
-        }
-        string inputOptions=uri.Scheme.Equals("rtsp",StringComparison.OrdinalIgnoreCase)?"-rtsp_transport tcp -rw_timeout 10000000 ":"-rw_timeout 10000000 ";
-        string args=$"-hide_banner -loglevel warning -fflags +genpts {inputOptions}-i \"{Esc(sourceUrl)}\" -map 0:v:0 -an -vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,format=bgra\" -pix_fmt bgra -f rawvideo pipe:1"+
-            (sourceAudio?$" -map 0:a:0? -vn -af \"aresample=async=1000:first_pts=0\" -ac 2 -ar 48000 -c:a pcm_s16le -f s16le \"{Esc(pipePath!)}\"":"");
-        _video=Start(ffmpeg,args,true);_=Task.Run(()=>VideoLoop(_video,width,height,_cts.Token));
-        if(sourceAudio&&_embeddedAudioPipe!=null)
-        {
-            try{await _embeddedAudioPipe.WaitForConnectionAsync(_cts.Token).WaitAsync(TimeSpan.FromSeconds(8));_=Task.Run(()=>AudioLoop(_embeddedAudioPipe,_cts.Token));}
-            catch(Exception ex){Stop();throw new InvalidOperationException("Network video opened, but its audio stream could not be connected. Choose Video Only if the source has no audio.",ex);}
+            string sourceAudioArgs=$"-hide_banner -loglevel warning -fflags +genpts {inputOptions}-i \"{Esc(sourceUrl)}\" -map 0:a:0? -vn -af \"aresample=async=1000:first_pts=0\" -ac 2 -ar 48000 -c:a pcm_s16le -f s16le pipe:1";
+            _audio=Start(ffmpeg,sourceAudioArgs,true);
+            await Task.Delay(250);
+            if(_audio.HasExited)
+            {
+                Kill(_audio);
+                _audio=null;
+                audioStatus="AUTO SOURCE UNAVAILABLE • VIDEO ONLY FALLBACK";
+            }
+            else
+            {
+                _=Task.Run(()=>AudioLoop(_audio,_cts.Token));
+                audioStatus="AUTO SOURCE 48 kHz";
+            }
         }
         else if(!string.IsNullOrWhiteSpace(audioDevice))
         {
             string audioArgs=$"-hide_banner -loglevel warning -fflags +genpts -f dshow -rtbufsize 128M -i audio=\"{Esc(audioDevice)}\" -vn -af \"aresample=async=1000:first_pts=0\" -ac 2 -ar 48000 -c:a pcm_s16le -f s16le pipe:1";
-            _audio=Start(ffmpeg,audioArgs,true);_=Task.Run(()=>AudioLoop(_audio,_cts.Token));
+            _audio=Start(ffmpeg,audioArgs,true);
+            _=Task.Run(()=>AudioLoop(_audio,_cts.Token));
+            audioStatus="EXTERNAL "+audioDevice;
         }
-        string audioStatus=sourceAudio?"AUTO SOURCE 48 kHz":string.IsNullOrWhiteSpace(audioDevice)?"OFF":"EXTERNAL "+audioDevice;
+        else audioStatus="OFF";
+
         StatusChanged?.Invoke($"NETWORK LIVE • {uri.Scheme.ToUpperInvariant()} • AUDIO {audioStatus}");
-        await Task.Delay(180);if(_video.HasExited)throw new InvalidOperationException("Network source could not start. Verify URL, protocol and network access.");
+        await Task.Delay(180);
+        if(_video.HasExited)throw new InvalidOperationException("Network source could not start. Verify URL, protocol and network access.");
     }
     public async Task StartNdiAsync(string ffmpeg,string sourceName,string? audioDevice,int width=1280,int height=720,double fps=25)
     {
