@@ -1,0 +1,17 @@
+v0.6.8.50.52 packaging fix (includes previous source fixes)
+
+User log (4) confirms Release build succeeded with 0 errors and 18 warnings.
+Publish completed, but PLAYOUT lacked SMARTPlayout.Engine.Worker.dll.
+WorkerOutputFiles was defined only inside an AfterTargets=Build target;
+the separate publish --no-build invocation did not execute that target.
+
+The worker manifest now lives in DefineWorkerOutputFiles, a dependency of
+both output-copy and publish-copy targets. All four workers explicitly copy
+their EXE, DLL, deps.json and runtimeconfig.json during either invocation.
+Verification checks the companion files before attempting worker launch.
+The original PING/heartbeat/shutdown verification remains enabled.
+
+Validation: source/XML and archive checks only in this Linux environment.
+Windows build, worker verification and application launch remain unverified
+for this revision. Extract into a fresh folder and run BUILD_AND_RUN.bat.
+The build script still labels its log v0.6.8.50.48; that label is unchanged.

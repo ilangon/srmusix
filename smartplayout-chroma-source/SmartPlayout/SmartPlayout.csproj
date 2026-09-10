@@ -1,0 +1,113 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <AssemblyName>SMARTPlayout</AssemblyName>
+    <RootNamespace>FFmpegNativePlayer</RootNamespace>
+    <ApplicationIcon>SRMediaPlayer.ico</ApplicationIcon>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
+
+
+  <!--
+    SDK 10 can occasionally finish the net8.0-windows build without materializing
+    SMARTPlayout.runtimeconfig.json before Publish copies build outputs.
+    This safety target only runs when the file is missing.
+  -->
+  <Target Name="EnsureRuntimeConfigExists"
+          AfterTargets="Build"
+          BeforeTargets="PrepareForPublish"
+          Condition="!Exists('$(TargetDir)$(TargetName).runtimeconfig.json')">
+    <PropertyGroup>
+      <_RuntimeConfigText>{
+  &quot;runtimeOptions&quot;: {
+    &quot;tfm&quot;: &quot;net8.0&quot;,
+    &quot;includedFrameworks&quot;: [
+      { &quot;name&quot;: &quot;Microsoft.NETCore.App&quot;, &quot;version&quot;: &quot;8.0.0&quot; },
+      { &quot;name&quot;: &quot;Microsoft.WindowsDesktop.App&quot;, &quot;version&quot;: &quot;8.0.0&quot; }
+    ]
+  }
+}</_RuntimeConfigText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(TargetDir)$(TargetName).runtimeconfig.json"
+                      Lines="$(_RuntimeConfigText)"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+    <Message Importance="High"
+             Text="SMART PLAYOUT: runtimeconfig safety file created at $(TargetDir)$(TargetName).runtimeconfig.json" />
+  </Target>
+
+  <Target Name="PrepareFFmpegRuntime" BeforeTargets="Build" Condition="'$(SMARTPLAYER_SKIP_RUNTIME_PREP)' != '1'">
+    <Exec Command="&quot;$(MSBuildProjectDirectory)\..\PREPARE_FFMPEG_RUNTIME.bat&quot;" />
+  </Target>
+  <!-- Define this manifest for separate publish invocations that skip building. -->
+  <Target Name="DefineWorkerOutputFiles">
+    <ItemGroup>
+      <WorkerOutputFiles Include="$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.CgWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.CG.Worker.exe;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.CgWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.CG.Worker.dll;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.CgWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.CG.Worker.deps.json;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.CgWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.CG.Worker.runtimeconfig.json" />
+      <WorkerOutputFiles Include="$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.ChromaWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Chroma.Worker.exe;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.ChromaWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Chroma.Worker.dll;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.ChromaWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Chroma.Worker.deps.json;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.ChromaWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Chroma.Worker.runtimeconfig.json" />
+      <WorkerOutputFiles Include="$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.OutputWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Output.Worker.exe;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.OutputWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Output.Worker.dll;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.OutputWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Output.Worker.deps.json;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.OutputWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Output.Worker.runtimeconfig.json" />
+      <WorkerOutputFiles Include="$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.PlayoutWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Engine.Worker.exe;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.PlayoutWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Engine.Worker.dll;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.PlayoutWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Engine.Worker.deps.json;$(MSBuildProjectDirectory)\..\Modules\SmartPlayout.PlayoutWorker\bin\$(Configuration)\net8.0-windows\win-x64\SMARTPlayout.Engine.Worker.runtimeconfig.json" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyFFmpegRuntimeToOutput" AfterTargets="Build" DependsOnTargets="DefineWorkerOutputFiles">
+    <RemoveDir Directories="$(OutDir)Runtime\Decoder;$(OutDir)Runtime\Encoder;$(OutDir)Runtime\DirectShow" />
+    <RemoveDir Directories="$(OutDir)Runtime\DeckLink\FFmpeg" />
+    <MakeDir Directories="$(OutDir)Runtime\MediaCore\FFmpeg;$(OutDir)Runtime\DeckLink\Native;$(OutDir)Runtime\Tools" />
+    <ItemGroup>
+      <MediaCoreRuntimeFiles Include="$(MSBuildProjectDirectory)\..\ffmpeg_runtime\MediaCore\win-x64\*.*" />
+      <DeckLinkNativeFiles Include="$(MSBuildProjectDirectory)\..\native_runtime\DeckLink\SMARTPlayout.Device.BMD.x64.dll" Condition="Exists('$(MSBuildProjectDirectory)\..\native_runtime\DeckLink\SMARTPlayout.Device.BMD.x64.dll')" />
+      <YtDlpTool Include="$(MSBuildProjectDirectory)\..\Tools\yt-dlp.exe" Condition="Exists('$(MSBuildProjectDirectory)\..\Tools\yt-dlp.exe')" />
+      <YtDlpTool Include="$(MSBuildProjectDirectory)\..\..\..\references\yt-dlp(1).exe" Condition="'@(YtDlpTool)' == '' and Exists('$(MSBuildProjectDirectory)\..\..\..\references\yt-dlp(1).exe')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MediaCoreRuntimeFiles)" DestinationFolder="$(OutDir)Runtime\MediaCore\FFmpeg" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(DeckLinkNativeFiles)" DestinationFolder="$(OutDir)Runtime\DeckLink\Native" SkipUnchangedFiles="true" Condition="'@(DeckLinkNativeFiles)' != ''" />
+    <Copy SourceFiles="@(YtDlpTool)" DestinationFiles="@(YtDlpTool->'$(OutDir)Runtime\Tools\yt-dlp.exe')" SkipUnchangedFiles="true" Condition="'@(YtDlpTool)' != ''" />
+    <Copy SourceFiles="@(WorkerOutputFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(WorkerOutputFiles)' != ''" />
+  </Target>
+  <Target Name="CopyFFmpegRuntimeToPublish" AfterTargets="Publish" DependsOnTargets="DefineWorkerOutputFiles">
+    <RemoveDir Directories="$(PublishDir)Runtime\Decoder;$(PublishDir)Runtime\Encoder;$(PublishDir)Runtime\DirectShow" />
+    <RemoveDir Directories="$(PublishDir)Runtime\DeckLink\FFmpeg" />
+    <MakeDir Directories="$(PublishDir)Runtime\MediaCore\FFmpeg;$(PublishDir)Runtime\DeckLink\Native;$(PublishDir)Runtime\Tools" />
+    <ItemGroup>
+      <MediaCorePublishFiles Include="$(MSBuildProjectDirectory)\..\ffmpeg_runtime\MediaCore\win-x64\*.*" />
+      <DeckLinkNativePublishFiles Include="$(MSBuildProjectDirectory)\..\native_runtime\DeckLink\SMARTPlayout.Device.BMD.x64.dll" Condition="Exists('$(MSBuildProjectDirectory)\..\native_runtime\DeckLink\SMARTPlayout.Device.BMD.x64.dll')" />
+      <YtDlpPublishTool Include="$(MSBuildProjectDirectory)\..\Tools\yt-dlp.exe" Condition="Exists('$(MSBuildProjectDirectory)\..\Tools\yt-dlp.exe')" />
+      <YtDlpPublishTool Include="$(MSBuildProjectDirectory)\..\..\..\references\yt-dlp(1).exe" Condition="'@(YtDlpPublishTool)' == '' and Exists('$(MSBuildProjectDirectory)\..\..\..\references\yt-dlp(1).exe')" />
+      <WorkerPublishFiles Include="@(WorkerOutputFiles)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MediaCorePublishFiles)" DestinationFolder="$(PublishDir)Runtime\MediaCore\FFmpeg" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(DeckLinkNativePublishFiles)" DestinationFolder="$(PublishDir)Runtime\DeckLink\Native" SkipUnchangedFiles="true" Condition="'@(DeckLinkNativePublishFiles)' != ''" />
+    <Copy SourceFiles="@(YtDlpPublishTool)" DestinationFiles="@(YtDlpPublishTool->'$(PublishDir)Runtime\Tools\yt-dlp.exe')" SkipUnchangedFiles="true" Condition="'@(YtDlpPublishTool)' != ''" />
+    <Copy SourceFiles="@(WorkerPublishFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="'@(WorkerPublishFiles)' != ''" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="9.0.1.1" />
+    <PackageReference Include="FFmpeg.AutoGen.Bindings.DynamicallyLoaded" Version="9.0.1.1" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\SmartPlayout.Contracts\SmartPlayout.Contracts.csproj" />
+    <ProjectReference Include="..\Modules\SmartPlayout.CgWorker\SmartPlayout.CgWorker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Modules\SmartPlayout.ChromaWorker\SmartPlayout.ChromaWorker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Modules\SmartPlayout.OutputWorker\SmartPlayout.OutputWorker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Modules\SmartPlayout.PlayoutWorker\SmartPlayout.PlayoutWorker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Modules\SmartPlayout.FileFFM\SmartPlayout.FileFFM.csproj" />
+    <ProjectReference Include="..\Modules\SmartPlayout.CodecsFFM\SmartPlayout.CodecsFFM.csproj" />
+    <ProjectReference Include="..\Modules\SmartPlayout.FilterFFM\SmartPlayout.FilterFFM.csproj" />
+    <ProjectReference Include="..\Modules\SmartPlayout.WriterFFM\SmartPlayout.WriterFFM.csproj" />
+    <ProjectReference Include="..\Modules\SmartPlayout.EncoderFFM\SmartPlayout.EncoderFFM.csproj" />
+    <!-- v0.6.8.50.31 diagnostic build: MediaConverter is a boundary-only module and is not referenced by application code.
+         Temporarily detached from the main build because SDK 10.0.400 repeatedly loses its obj DLL on the N: build path (MSB3030). -->
+  </ItemGroup>
+</Project>

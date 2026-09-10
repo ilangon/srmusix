@@ -1,0 +1,23 @@
+SMART PLAYOUT v0.6.8.50.56 — CG + CHROMA KEYER UPDATE
+
+Included corrections
+1. Main navigation now contains CG STUDIO and opens the existing CG Studio
+   worker/designer workflow.
+2. Chroma Keyer source dropdown uses dark popup items with readable text.
+3. Chroma Keyer has a colour-picker action: click PICK COLOUR FROM VIDEO and
+   then click the exact green/blue background colour in INPUT PREVIEW.
+4. The chosen key colour is shown as a live colour swatch.
+5. Tolerance, dullness, smoothness, spill suppression, spectral balance,
+   edge softness and shadow recovery have drag sliders with fine increments.
+   Exact numeric text entry remains available.
+6. TEST URL validates/resolves a network URL. REFRESH SOURCE starts its live
+   preview. TAKE TO AIR moves that verified source to the Final Program.
+
+Build on Windows
+- Extract to a short local folder, for example C:\SMART_PLAYOUT_50_56
+- Run BUILD_AND_RUN.bat.
+- Use the resulting BUILD_AND_RUN_v0.6.8.50.56.log for any further diagnosis.
+
+YouTube/Facebook note
+Page URLs require yt-dlp.exe in Runtime\Tools or beside SMARTPlayout.exe.
+HLS, RTSP, RTMP, SRT, UDP and RTP direct URLs do not require yt-dlp.

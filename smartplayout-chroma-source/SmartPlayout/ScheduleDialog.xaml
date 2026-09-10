@@ -1,0 +1,94 @@
+<Window x:Class="FFmpegNativePlayer.ScheduleDialog"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Add Schedule" Width="640" Height="500" MinHeight="460" ResizeMode="CanResizeWithGrip"
+ WindowStartupLocation="CenterOwner" Background="#15191F" Foreground="#E8EDF5">
+ <Window.Resources>
+  <Style TargetType="Button" BasedOn="{StaticResource Modern3DButton}"/>
+  <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#E8EDF5"/></Style>
+  <Style TargetType="RadioButton"><Setter Property="Foreground" Value="#E8EDF5"/><Setter Property="Margin" Value="5,0,12,0"/></Style>
+  <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#E8EDF5"/><Setter Property="Margin" Value="5,0,12,0"/></Style>
+ </Window.Resources>
+
+ <Grid Margin="12">
+  <Grid.RowDefinitions>
+   <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+   <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+  </Grid.RowDefinitions>
+
+  <Border Grid.Row="0" Background="#20262E" BorderBrush="#3A4552" BorderThickness="1" Padding="9" CornerRadius="5">
+   <StackPanel>
+    <TextBlock Text="ADD SCHEDULE" FontWeight="Bold" FontSize="16"/>
+    <TextBlock x:Name="ProgramNameText" FontWeight="SemiBold" Margin="0,3,0,0"/>
+    <TextBlock x:Name="DurationText" Foreground="#AAB6C5" Margin="0,2,0,0"/>
+   </StackPanel>
+  </Border>
+
+  <Grid Grid.Row="1" Margin="0,10,0,0">
+   <Grid.ColumnDefinitions>
+    <ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/>
+   </Grid.ColumnDefinitions>
+   <Button Grid.Column="0" Content="↻  RESET DATE/TIME" Click="ResetNow_Click" ToolTip="Set Start Date and Start Time to current system time"/>
+   <StackPanel Grid.Column="1" Margin="8,0,12,0">
+    <TextBlock Text="START DATE" FontSize="11" Foreground="#9EABBC"/>
+    <DatePicker x:Name="StartDatePicker" Height="30"/>
+   </StackPanel>
+   <StackPanel Grid.Column="3">
+    <TextBlock Text="START TIME" FontSize="11" Foreground="#9EABBC"/>
+    <StackPanel Orientation="Horizontal">
+     <ComboBox x:Name="StartHour" Width="48" Height="30"/>
+     <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"/>
+     <ComboBox x:Name="StartMinute" Width="48" Height="30"/>
+     <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"/>
+     <ComboBox x:Name="StartSecond" Width="48" Height="30"/>
+     <ComboBox x:Name="StartAmPm" Width="55" Height="30" Margin="5,0,0,0"/>
+    </StackPanel>
+   </StackPanel>
+  </Grid>
+
+  <Border Grid.Row="2" Margin="0,10,0,0" Background="#10151B" Padding="8" BorderBrush="#2C3642" BorderThickness="1">
+   <StackPanel>
+    <TextBlock Text="START BEHAVIOR" FontWeight="Bold" FontSize="11" Margin="0,0,0,5"/>
+    <StackPanel Orientation="Horizontal">
+     <RadioButton x:Name="TimeModeRadio" Content="TIME — after current item finishes" GroupName="StartMode"/>
+     <RadioButton x:Name="ExactModeRadio" Content="EXACT TIME — cut and start at exact time" GroupName="StartMode" IsChecked="True"/>
+    </StackPanel>
+   </StackPanel>
+  </Border>
+
+  <Grid Grid.Row="3" Margin="0,10,0,0">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <TextBlock Grid.Column="0" Text="END TIME" VerticalAlignment="Center" FontWeight="Bold"/>
+   <StackPanel Grid.Column="1" Orientation="Horizontal">
+    <ComboBox x:Name="EndHour" Width="48" Height="30"/>
+    <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"/>
+    <ComboBox x:Name="EndMinute" Width="48" Height="30"/>
+    <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"/>
+    <ComboBox x:Name="EndSecond" Width="48" Height="30"/>
+    <ComboBox x:Name="EndAmPm" Width="55" Height="30" Margin="5,0,0,0"/>
+   </StackPanel>
+   <CheckBox Grid.Column="3" x:Name="ExactEndCheck" Content="EXACT END TIME" IsChecked="True" VerticalAlignment="Center"
+             ToolTip="Cut the scheduled program exactly at END time"/>
+  </Grid>
+
+  <Border Grid.Row="4" Margin="0,10,0,0" Background="#10151B" Padding="8" BorderBrush="#2C3642" BorderThickness="1">
+   <StackPanel Orientation="Horizontal">
+    <CheckBox x:Name="AutoEndCheck" Content="AUTO END = START + PROGRAM DURATION" Checked="AutoEndCheck_Changed" Unchecked="AutoEndCheck_Changed"/>
+    <CheckBox x:Name="AutoChainCheck" Content="AUTO CONTINUITY / NEXT START = PREVIOUS END" IsChecked="True"
+              ToolTip="When adding the next schedule, use the previous calculated END as its START"/>
+    <CheckBox x:Name="ContinueCheck" Content="CONTINUE / NO END" Checked="ContinueCheck_Changed" Unchecked="ContinueCheck_Changed"/>
+   </StackPanel>
+  </Border>
+
+  <TextBlock Grid.Row="5" Margin="0,10,0,0" Foreground="#8F9BAB" TextWrapping="Wrap"
+             Text="TIME: schedule waits until the item already on air finishes. EXACT TIME: current item is interrupted and this schedule starts at the selected clock time. EXACT END TIME: scheduled program is cut at the selected end time."/>
+
+  <Border Grid.Row="6" Background="#20262E" BorderBrush="#3A4552" BorderThickness="1"
+          Padding="7" Margin="0,10,0,0" CornerRadius="4">
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+    <Button Content="✓  SUBMIT / ADD SCHEDULE" Click="Ok_Click" MinWidth="155" ToolTip="Submit this schedule"/>
+    <Button Content="✕  CANCEL" Click="Cancel_Click" MinWidth="90"/>
+   </StackPanel>
+  </Border>
+ </Grid>
+</Window>

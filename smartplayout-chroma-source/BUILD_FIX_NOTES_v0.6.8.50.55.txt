@@ -1,0 +1,13 @@
+v0.6.8.50.55 PowerShell protocol timestamp fix (cumulative package)
+
+Log (7) confirms compilation and self-contained publish succeeded with 0
+errors. The unique verification pipe connected, but PING validation failed.
+
+Windows PowerShell's ConvertTo-Json representation of a DateTimeOffset is not
+guaranteed to match the ISO-8601 string required by System.Text.Json when it
+deserializes ModuleCommand.CreatedUtc. PING, REGISTER_ROUTE and SHUTDOWN now
+send CreatedUtc explicitly in round-trip ISO-8601 format ("O"). PING failure
+also records the complete raw worker reply for actionable diagnostics.
+
+Includes every earlier source, packaging, path and worker lifecycle fix.
+Extract into a fresh folder and run BUILD_AND_RUN.bat.

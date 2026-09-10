@@ -1,0 +1,15 @@
+v0.6.8.50.53 path-safety fix (cumulative package)
+
+The supplied log (5) stopped before compilation because the extraction path
+contained parentheses: "New folder (2)". Percent-expanded absolute paths inside
+parenthesized CMD blocks caused the parser error "was unexpected at this time".
+
+BUILD_DECKLINK_NATIVE_BRIDGE.bat now uses delayed expansion for path variables
+inside command blocks. BUILD_AND_RUN.bat now enables delayed expansion and uses
+it for block-scoped LOG, CD and RUNTIMECONFIG paths. UTF-8 BOM bytes were also
+removed from BAT entrypoints that produced the stray "@echo" warnings.
+
+This package includes the v0.6.8.50.52 worker publish-manifest correction and
+all earlier C# compilation corrections. Extract into a fresh folder and run
+BUILD_AND_RUN.bat. Paths with spaces and parentheses are supported by these
+corrected build entrypoints.

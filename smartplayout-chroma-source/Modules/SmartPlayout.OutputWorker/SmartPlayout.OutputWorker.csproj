@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><RuntimeIdentifier>win-x64</RuntimeIdentifier><PlatformTarget>x64</PlatformTarget><SelfContained>true</SelfContained><UseAppHost>true</UseAppHost><AssemblyName>SMARTPlayout.Output.Worker</AssemblyName><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\SmartPlayout.Contracts\SmartPlayout.Contracts.csproj" /><Compile Include="..\WorkerShared\*.cs" Link="%(Filename)%(Extension)" /></ItemGroup>
+</Project>

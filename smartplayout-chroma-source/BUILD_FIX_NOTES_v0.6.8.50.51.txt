@@ -1,0 +1,31 @@
+SMART PLAYOUT v0.6.8.50.51 — cumulative build fixes
+
+Fixed source files
+  SmartPlayout\BroadcastStudioWindow.xaml.cs
+  SmartPlayout\FinalProgramCompositor.cs
+  SmartPlayout\ModuleProcessSupervisor.cs
+  SmartPlayout\ChromaKeyWindow.xaml.cs
+
+Fixes
+  1. Removed four invalid extra semicolons after CgProfile auto-properties
+     (CS1597).
+  2. Added explicit WPF aliases for Brush, Brushes, Color, ComboBox, Cursors,
+     FlowDirection, FontFamily, Pen, and Point, plus System.Threading.Timer
+     (CS0104 and dependent type-conversion errors).
+  3. Corrected the LiveCaptureEngine.StatusChanged event subscription by using
+     += (CS0070).
+  4. Renamed the inner special-source audio variable to avoid a nested local
+     name collision (CS0136).
+
+No UI layout, graphics behaviour, playout behaviour, or data format was
+intentionally changed by these compile fixes.
+
+Build on the Windows development PC
+  1. Extract this ZIP to a short local path, for example C:\SMART_PLAYOUT\
+  2. Open Command Prompt in that folder.
+  3. Run: BUILD_AND_RUN.bat
+
+Notes
+  CA1416, CS860x, CS4014, CS0169, and CS0414 messages in the supplied log are
+  warnings and do not stop the build. The `'@echo' is not recognized` message
+  is caused by a UTF-8 BOM in a batch file and is currently non-blocking.

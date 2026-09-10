@@ -1,0 +1,759 @@
+﻿<Window x:Class="FFmpegNativePlayer.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:local="clr-namespace:FFmpegNativePlayer"
+ Title="SMART PLAYOUT — v0.6.8.50.57 Complete CG Studio" Width="1500" Height="900" MinWidth="1180" MinHeight="700"
+ Background="#0B1017" Foreground="#E8EDF5" WindowStartupLocation="CenterScreen">
+ <Window.Resources>
+  <Style TargetType="Button" BasedOn="{StaticResource Modern3DButton}"/>
+  <Style x:Key="MainBlueIcon" TargetType="Button" BasedOn="{StaticResource IconBlue3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style x:Key="MainGreenIcon" TargetType="Button" BasedOn="{StaticResource IconGreen3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style x:Key="MainAmberIcon" TargetType="Button" BasedOn="{StaticResource IconAmber3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style x:Key="MainRedIcon" TargetType="Button" BasedOn="{StaticResource IconRed3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style x:Key="MainPurpleIcon" TargetType="Button" BasedOn="{StaticResource IconPurple3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style x:Key="MainCyanIcon" TargetType="Button" BasedOn="{StaticResource IconCyan3D}"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+
+  <!-- Modern dark broadcast-console navigation with semantic 3D identity -->
+  <Style x:Key="NavBase3D" TargetType="Button" BasedOn="{StaticResource Modern3DButton}">
+   <Setter Property="Height" Value="36"/><Setter Property="Padding" Value="12,4"/><Setter Property="Margin" Value="3,2"/>
+   <Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style x:Key="NavOnAir3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#FF7D8B"/></Style>
+  <Style x:Key="NavInstant3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#79C8FF"/></Style>
+  <Style x:Key="NavProgram3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#C89BFF"/></Style>
+  <Style x:Key="NavScheduler3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#FFD36A"/></Style>
+  <Style x:Key="NavFiller3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#79F0A7"/></Style>
+  <Style x:Key="NavCg3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#C89BFF"/></Style>
+  <Style x:Key="NavOutput3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#63E7E5"/></Style>
+  <Style x:Key="NavSettings3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#9FD9FF"/></Style>
+  <Style x:Key="NavScreen3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#8EDCFF"/></Style>
+  <Style x:Key="NavStream3D" TargetType="Button" BasedOn="{StaticResource NavBase3D}"><Setter Property="Foreground" Value="#5FE6C8"/></Style>
+  <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#E8EDF5"/></Style>
+  <Style TargetType="TextBox"><Setter Property="Background" Value="#0C131C"/><Setter Property="Foreground" Value="#F3F7FB"/><Setter Property="BorderBrush" Value="#33485D"/><Setter Property="CaretBrush" Value="#79C8FF"/></Style>
+  <!-- STREAM UI: own ComboBox template so Windows themes cannot turn the field white / hide the selected codec. -->
+  <Style x:Key="StreamComboItem" TargetType="ComboBoxItem">
+   <Setter Property="Foreground" Value="#F4F8FC"/><Setter Property="Background" Value="#0E1822"/><Setter Property="Padding" Value="10,7"/>
+   <Setter Property="FontSize" Value="12"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+   <Style.Triggers>
+    <Trigger Property="IsHighlighted" Value="True"><Setter Property="Background" Value="#24506A"/><Setter Property="Foreground" Value="#FFFFFF"/></Trigger>
+    <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#16747D"/><Setter Property="Foreground" Value="#FFFFFF"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+    <Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="#9FB1C2"/><Setter Property="Opacity" Value="0.82"/></Trigger>
+   </Style.Triggers>
+  </Style>
+  <Style x:Key="StreamComboBox" TargetType="ComboBox">
+   <Setter Property="Foreground" Value="#FFFFFF"/><Setter Property="Background" Value="#111F2B"/><Setter Property="BorderBrush" Value="#45647D"/>
+   <Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="10,0"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/>
+   <Setter Property="MinHeight" Value="36"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="ItemContainerStyle" Value="{StaticResource StreamComboItem}"/>
+   <Setter Property="MaxDropDownHeight" Value="300"/>
+   <Setter Property="Template">
+    <Setter.Value>
+     <ControlTemplate TargetType="ComboBox">
+      <Grid SnapsToDevicePixels="True">
+       <Border x:Name="FieldBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"/>
+       <Grid Margin="1">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="34"/></Grid.ColumnDefinitions>
+        <ContentPresenter x:Name="ContentSite" Grid.Column="0" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Left"
+                          Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
+        <TextBox x:Name="PART_EditableTextBox" Grid.Column="0" Margin="5,2,2,2" Visibility="Hidden" Background="#111F2B" Foreground="#FFFFFF"
+                 BorderThickness="0" CaretBrush="#63E7E5" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}"
+                 VerticalContentAlignment="Center" IsReadOnly="{TemplateBinding IsReadOnly}"/>
+        <ToggleButton x:Name="DropDownToggle" Grid.Column="1" Focusable="False" ClickMode="Press" Background="Transparent" BorderThickness="0"
+                      IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+         <Grid><Path Width="10" Height="6" Stretch="Fill" Fill="#8EDCFF" Data="M 0 0 L 5 5 L 10 0 Z" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+        </ToggleButton>
+       </Grid>
+       <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+        <Border x:Name="DropDownBorder" Margin="0,3,0,0" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                Background="#0A141D" BorderBrush="#4B718B" BorderThickness="1" CornerRadius="5">
+         <ScrollViewer Margin="2" MaxHeight="{TemplateBinding MaxDropDownHeight}" CanContentScroll="True" VerticalScrollBarVisibility="Auto">
+          <ItemsPresenter/>
+         </ScrollViewer>
+        </Border>
+       </Popup>
+      </Grid>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsEditable" Value="True"><Setter TargetName="ContentSite" Property="Visibility" Value="Collapsed"/><Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/></Trigger>
+       <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FieldBorder" Property="BorderBrush" Value="#63E7E5"/><Setter TargetName="FieldBorder" Property="BorderThickness" Value="2"/></Trigger>
+       <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="FieldBorder" Property="Background" Value="#162B3A"/><Setter TargetName="FieldBorder" Property="BorderBrush" Value="#63E7E5"/></Trigger>
+       <Trigger Property="IsEnabled" Value="False"><Setter TargetName="FieldBorder" Property="Background" Value="#17212B"/><Setter Property="Foreground" Value="#C3D0DC"/><Setter Property="Opacity" Value="0.88"/></Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate>
+    </Setter.Value>
+   </Setter>
+  </Style>
+  <Style x:Key="StreamBitrateCombo" TargetType="ComboBox" BasedOn="{StaticResource StreamComboBox}">
+   <Setter Property="MinHeight" Value="38"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="MaxDropDownHeight" Value="280"/>
+  </Style>
+  <Style TargetType="ListViewItem"><Setter Property="Foreground" Value="#E8EDF5"/><Setter Property="Background" Value="Transparent"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Style.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#1F6FAE"/><Setter Property="Foreground" Value="White"/></Trigger></Style.Triggers></Style>
+ </Window.Resources>
+ <Grid Margin="10">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Border Grid.Row="0" Background="#121C27" CornerRadius="7" Margin="0,0,0,8">
+   <DockPanel>
+    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal"><TextBlock Text="SMART PLAYOUT" FontSize="21" FontWeight="Bold" Foreground="#F5F9FD" VerticalAlignment="Center"/><TextBlock Text="  •  MODERN BROADCAST CONSOLE" Foreground="#63E7E5" VerticalAlignment="Center"/></StackPanel>
+    <TextBlock x:Name="StatusText" Text="READY" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"/>
+   </DockPanel>
+  </Border>
+
+  <Border Grid.Row="1" Background="#0E1721" BorderBrush="#253B50" BorderThickness="1" CornerRadius="7" Margin="0,0,0,8">
+   <DockPanel>
+    <StackPanel Orientation="Horizontal">
+     <Button Style="{StaticResource NavOnAir3D}" Click="DashboardNav_Click" ToolTip="MAIN — live confidence monitoring and playout control"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7E8;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="MAIN"/></StackPanel></Button>
+     <Button Style="{StaticResource NavInstant3D}" Click="InstantNav_Click" ToolTip="INSTANT PLAYLIST — instant media workspace"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8D6;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="INSTANT PLAYLIST"/></StackPanel></Button>
+     <Button Style="{StaticResource NavProgram3D}" Click="ProgramManager_Click" ToolTip="PROGRAM — integrated Program workspace"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B7;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="PROGRAM"/></StackPanel></Button>
+     <Button Style="{StaticResource NavScheduler3D}" Click="SchedulerNav_Click" ToolTip="SCHEDULER — integrated scheduling workspace"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE787;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="SCHEDULER"/></StackPanel></Button>
+     <Button Style="{StaticResource NavFiller3D}" Click="FillerNav_Click" ToolTip="FILLER — default / fallback playout"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE768;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="FILLER"/></StackPanel></Button>
+     <Button Style="{StaticResource NavCg3D}" Click="MixerNav_Click" ToolTip="AUDIO MIXER — dedicated Final Program audio controls"><StackPanel Orientation="Horizontal"><TextBlock Text="MIX" FontSize="9" FontWeight="Bold" Foreground="#FFD36A" Margin="0,0,7,0"/><TextBlock Text="MIXER"/></StackPanel></Button>
+     <Button Style="{StaticResource NavCg3D}" Click="LiveNav_Click" ToolTip="LIVE INPUT — capture device selection and TAKE TO AIR"><StackPanel Orientation="Horizontal"><TextBlock Text="IN" FontSize="9" FontWeight="Bold" Foreground="#69F0C5" Margin="0,0,7,0"/><TextBlock Text="LIVE"/></StackPanel></Button>
+     <Button Style="{StaticResource NavCg3D}" Click="BreakNav_Click" ToolTip="BREAK / ADS — dedicated commercial break manager"><StackPanel Orientation="Horizontal"><TextBlock Text="AD" FontSize="9" FontWeight="Bold" Foreground="#FFB36A" Margin="0,0,7,0"/><TextBlock Text="BREAK"/></StackPanel></Button>
+     <Button Style="{StaticResource NavCg3D}" Click="KeyerNav_Click" ToolTip="CHROMA KEYER — dedicated key preview canvas"><StackPanel Orientation="Horizontal"><TextBlock Text="KEY" FontSize="9" FontWeight="Bold" Foreground="#79F0A7" Margin="0,0,7,0"/><TextBlock Text="KEYER"/></StackPanel></Button>
+     <Button Style="{StaticResource NavCg3D}" Click="CgNav_Click" ToolTip="CG STUDIO — lower thirds, tickers, logos and graphics"><StackPanel Orientation="Horizontal"><TextBlock Text="CG" FontSize="9" FontWeight="Bold" Foreground="#E7B5FF" Margin="0,0,7,0"/><TextBlock Text="CG STUDIO"/></StackPanel></Button>
+     <Button Style="{StaticResource NavOutput3D}" Click="PlayoutPlusNav_Click" ToolTip="PLAYOUT+ — Medialooks parity / low-level playout stage"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D9;" FontSize="14" Margin="0,0,7,0"/><TextBlock Text="PLAYOUT+"/></StackPanel></Button>
+     <Button Style="{StaticResource NavOutput3D}" Click="OutputNav_Click" ToolTip="OUTPUT — broadcast output"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE968;" FontSize="15" Margin="0,0,7,0"/><TextBlock Text="OUTPUT"/></StackPanel></Button>
+     <Button Style="{StaticResource NavStream3D}" Click="StreamNav_Click" ToolTip="STREAM — streaming workspace"><StackPanel Orientation="Horizontal"><TextBlock Text="LIVE" FontSize="9" FontWeight="Bold" Foreground="#5FE6C8" Margin="0,0,7,0"/><TextBlock Text="STREAM"/></StackPanel></Button>
+     <Button Style="{StaticResource NavScreen3D}" Click="ScreenNav_Click" ToolTip="SCREEN — display and resolution workspace"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7F4;" FontSize="14" Margin="0,0,7,0"/><TextBlock Text="SCREEN"/></StackPanel></Button>
+     <Button Style="{StaticResource NavSettings3D}" Click="SettingsNav_Click" ToolTip="SETTINGS — application settings"><StackPanel Orientation="Horizontal"><TextBlock Text="SET" FontSize="10" FontWeight="Bold" Foreground="#9FD9FF" Margin="0,0,7,0"/><TextBlock Text="SETTINGS"/></StackPanel></Button>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="SOURCE  " Foreground="#8295A8"/><TextBlock x:Name="NavCurrentSourceText" Text="IDLE" FontWeight="Bold" Foreground="#63E7E5"/></StackPanel>
+   </DockPanel>
+  </Border>
+
+  <Grid Grid.Row="2">
+   <!-- ON AIR DASHBOARD: source/program/schedule/filler confidence monitoring -->
+   <Grid x:Name="OnAirWorkspace" Visibility="Visible">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <Border Grid.ColumnSpan="2" Background="#0D151F" BorderBrush="#36536F" BorderThickness="1" CornerRadius="8" Margin="0,0,0,8">
+     <Grid Margin="6">
+      <Grid.ColumnDefinitions>
+       <ColumnDefinition Width="230"/><ColumnDefinition Width="230"/><ColumnDefinition Width="*"/><ColumnDefinition Width="330"/><ColumnDefinition Width="300"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- CURRENT / NOW card -->
+      <Border Grid.Column="0" Background="#182538" BorderBrush="#4D79A3" BorderThickness="1" CornerRadius="7" Margin="0,0,6,0">
+       <Grid Margin="5"><Grid.ColumnDefinitions><ColumnDefinition Width="72"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Background="#020406" CornerRadius="4" Width="68" Height="48" VerticalAlignment="Center"><Grid><Image x:Name="NowThumbImage" Stretch="UniformToFill"/><TextBlock Text="ON" Foreground="#5FE6A2" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.45"/></Grid></Border>
+        <StackPanel Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center">
+         <TextBlock Text="NOW PLAYING" FontSize="10" FontWeight="Bold" Foreground="#83D8FF"/>
+         <TextBlock x:Name="NowText" Text="—" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" ToolTip="Current on-air item"/>
+         <TextBlock x:Name="NowProgramInfoText" Text="PROGRAM —" FontSize="9.5" Foreground="#C9D6E3" TextTrimming="CharacterEllipsis"/>
+         <TextBlock x:Name="NowDescriptionText" Text="DESCRIPTION —" FontSize="9.5" Foreground="#AFC7DA" TextTrimming="CharacterEllipsis"/>
+         <StackPanel Orientation="Horizontal"><TextBlock x:Name="CurrentSourceText" Text="IDLE" FontSize="9.5" Foreground="#63E7E5" FontWeight="SemiBold"/><TextBlock Text="  •  "/><TextBlock x:Name="NowAudioText" Text="AUDIO —" FontSize="9.5" Foreground="#E7C85C"/></StackPanel>
+        </StackPanel>
+       </Grid>
+      </Border>
+
+      <!-- NEXT card -->
+      <Border Grid.Column="1" Background="#182538" BorderBrush="#725EAE" BorderThickness="1" CornerRadius="7" Margin="0,0,6,0">
+       <Grid Margin="5"><Grid.ColumnDefinitions><ColumnDefinition Width="72"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Background="#020406" CornerRadius="4" Width="68" Height="48" VerticalAlignment="Center"><Grid><Image x:Name="NextThumbImage" Stretch="UniformToFill"/><TextBlock Text="▶" Foreground="#B7A7FF" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.35"/></Grid></Border>
+        <StackPanel Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center">
+         <TextBlock Text="NEXT PLAYING" FontSize="10" FontWeight="Bold" Foreground="#B7A7FF"/>
+         <TextBlock x:Name="NextText" Text="—" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis" ToolTip="Next queued item"/>
+         <TextBlock x:Name="NextProgramInfoText" Text="PROGRAM —" FontSize="9.5" Foreground="#C9D6E3" TextTrimming="CharacterEllipsis"/>
+         <TextBlock x:Name="NextDescriptionText" Text="DESCRIPTION —" FontSize="9.5" Foreground="#AFC7DA" TextTrimming="CharacterEllipsis"/>
+         <StackPanel Orientation="Horizontal"><TextBlock x:Name="StatusNextTypeText" Text="QUEUE / SCHEDULE" FontSize="9.5" Foreground="#8EA5BA"/><TextBlock Text="  •  "/><TextBlock x:Name="NextAudioText" Text="AUDIO —" FontSize="9.5" Foreground="#E7C85C"/></StackPanel>
+        </StackPanel>
+       </Grid>
+      </Border>
+
+      <!-- Central status -->
+      <Border Grid.Column="2" Background="#131E2A" BorderBrush="#2B435A" BorderThickness="1" CornerRadius="7" Margin="0,0,6,0">
+       <Grid Margin="8,4"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="StatusNowNextText" Text="NOW: —" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="#F1F6FB"/>
+        <TextBlock Grid.Row="1" x:Name="StatusScheduleLineText" Text="NEXT: —" FontSize="11" TextTrimming="CharacterEllipsis" Foreground="#AFC7DA"/>
+        <Grid Grid.Row="2" Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+         <TextBlock x:Name="StatusElapsedText" Text="00:00:00" FontFamily="Consolas" FontSize="16" FontWeight="Bold" Foreground="#70D7FF" VerticalAlignment="Center"/>
+         <ProgressBar x:Name="StatusPlayProgress" Grid.Column="1" Height="7" Margin="10,0" Minimum="0" Maximum="100" Value="0" VerticalAlignment="Center"/>
+         <TextBlock x:Name="StatusRemainingText" Grid.Column="2" Text="REM 00:00:00" FontFamily="Consolas" FontSize="12" Foreground="#FFD56A" VerticalAlignment="Center"/>
+         <TextBlock x:Name="StatusTotalText" Grid.Column="3" Text="  TOT 00:00:00" FontFamily="Consolas" FontSize="12" Foreground="#9FD9FF" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Grid.Row="3" Margin="0,3,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+         <TextBlock x:Name="HeaderCurrentScheduleText" Text="CURRENT SCHEDULE —" FontSize="9.5" Foreground="#7EE2AC" TextTrimming="CharacterEllipsis"/>
+         <TextBlock Grid.Column="1" x:Name="HeaderNextScheduleText" Text="NEXT SCHEDULE —" FontSize="9.5" Foreground="#9FD9FF" TextTrimming="CharacterEllipsis" Margin="10,0,0,0"/>
+        </Grid>
+       </Grid>
+      </Border>
+
+      <!-- Primary transport + master audio. ON AIR controls live here only. -->
+      <Border Grid.Column="3" Background="#131E2A" BorderBrush="#2B435A" BorderThickness="1" CornerRadius="7" Margin="0,0,6,0">
+       <Grid Margin="6"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+         <Button Style="{StaticResource MainBlueIcon}" Content="&#xE892;" FontFamily="Segoe MDL2 Assets" ToolTip="Previous item in active source" Click="StatusPrevious_Click"/>
+         <Button Style="{StaticResource MainGreenIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Play / Resume Program" Click="ProgramPlay_Click"/>
+         <Button Style="{StaticResource MainAmberIcon}" Content="&#xE769;" FontFamily="Segoe MDL2 Assets" ToolTip="Pause / Resume Program" Click="ProgramPause_Click"/>
+         <Button Style="{StaticResource MainRedIcon}" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Stop Program" Click="ProgramStop_Click"/>
+         <Button Style="{StaticResource MainBlueIcon}" Content="&#xE893;" FontFamily="Segoe MDL2 Assets" ToolTip="Next item in active source" Click="StatusNext_Click"/>
+         <Button Style="{StaticResource MainCyanIcon}" Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" ToolTip="Return to current Schedule" Click="ReturnToSchedule_Click"/>
+        </StackPanel>
+        <Grid Grid.Row="1" Margin="2,3,2,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions>
+         <Button x:Name="MasterMuteButton" Style="{StaticResource MainPurpleIcon}" Content="&#xE767;" FontFamily="Segoe MDL2 Assets" Width="30" Height="28" ToolTip="Mute Master On-Air Audio" Click="MasterMute_Click"/>
+         <Slider x:Name="MasterVolumeSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="100" Margin="6,0" VerticalAlignment="Center" ValueChanged="MasterVolumeSlider_ValueChanged" ToolTip="Master On-Air Volume"/>
+         <TextBlock x:Name="MasterVolumeText" Grid.Column="2" Text="100%" FontFamily="Consolas" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+        </Grid>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0"><TextBlock Text="AUTOMATION  " Foreground="#8295A8" FontSize="9.5"/><TextBlock x:Name="FillerStatusText" Text="FILLER STANDBY" Foreground="#E7C85C" FontWeight="SemiBold" FontSize="9.5"/></StackPanel>
+       </Grid>
+      </Border>
+
+      <!-- Clock / CPU / ON AIR master state: aligned two-row operator card -->
+      <Border Grid.Column="4" Background="#131E2A" BorderBrush="#2B435A" BorderThickness="1" CornerRadius="7">
+       <Grid Margin="8,4">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="76"/></Grid.ColumnDefinitions>
+        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,0">
+         <TextBlock x:Name="StatusClockText" Text="00:00:00" FontFamily="Consolas" FontSize="22" FontWeight="Bold" Foreground="#F2F6FA" HorizontalAlignment="Center"/>
+         <TextBlock x:Name="StatusDateText" Text="—" FontSize="10" Foreground="#9FB0C0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+         <TextBlock Text="CPU" Foreground="#8EA5BA" FontSize="9.5" HorizontalAlignment="Center"/>
+         <TextBlock x:Name="StatusCpuText" Text="0%" FontFamily="Consolas" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+         <ProgressBar x:Name="StatusCpuBar" Minimum="0" Maximum="100" Height="6" Value="0"/>
+        </StackPanel>
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#0B121A" BorderBrush="#2C475E" BorderThickness="1" CornerRadius="5" Margin="0,4,0,0" Padding="4,2">
+         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+          <Ellipse x:Name="OnAirLed" Width="11" Height="11" Fill="#52F28C" Stroke="#B7FFD0" StrokeThickness="1" VerticalAlignment="Center" Margin="0,0,7,0"><Ellipse.Effect><DropShadowEffect Color="#52F28C" BlurRadius="12" ShadowDepth="0" Opacity="0.9"/></Ellipse.Effect></Ellipse>
+          <Button x:Name="OnAirPowerButton" Height="27" MinWidth="82" Padding="7,2" Style="{StaticResource MainGreenIcon}" FontFamily="Segoe UI" Click="OnAirPower_Click" ToolTip="AIR ON / OFF — OFF gives full black output"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7E8;" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/><TextBlock x:Name="OnAirPowerText" Text="AIR ON" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/></StackPanel></Button>
+         </StackPanel>
+        </Border>
+       </Grid>
+      </Border>
+     </Grid>
+    </Border>
+    <Border Grid.Row="1" Background="#101923" CornerRadius="7" Margin="0,0,8,0">
+     <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="310"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <DockPanel Margin="0,0,0,7"><TextBlock Text="ON AIR / PROGRAM CONFIDENCE MONITOR" FontWeight="Bold" FontSize="15" Foreground="#67E8A5"/><TextBlock x:Name="ProgramTimeText" DockPanel.Dock="Right" Text="00:00 / 00:00" Foreground="#B7C2D0"/></DockPanel>
+      <Grid Grid.Row="1">
+       <Border Background="#030507" BorderBrush="#4C769B" BorderThickness="2" CornerRadius="6" HorizontalAlignment="Left" Width="550">
+        <Grid>
+         <Image x:Name="ProgramImage" Stretch="Fill"/>
+         <Grid x:Name="ProgramStateOverlay" Panel.ZIndex="20" Visibility="Collapsed" Background="#05070A">
+          <Grid x:Name="StandbySlate">
+           <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="76"/></Grid.RowDefinitions>
+           <Grid Grid.Row="0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <Border Background="#D8D8D8"/><Border Grid.Column="1" Background="#D8D800"/><Border Grid.Column="2" Background="#00D8D8"/><Border Grid.Column="3" Background="#00D800"/><Border Grid.Column="4" Background="#D800D8"/><Border Grid.Column="5" Background="#D80000"/><Border Grid.Column="6" Background="#0000D8"/>
+           </Grid>
+           <Border Grid.Row="1" Background="#07111B" BorderBrush="#2D526D" BorderThickness="0,1,0,0"><StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"><TextBlock Text="SMART PLAYOUT" FontSize="22" FontWeight="Bold" Foreground="#F5F9FD" HorizontalAlignment="Center"/><TextBlock Text="PROGRAM STOPPED  •  STANDBY" FontSize="11" FontWeight="SemiBold" Foreground="#63E7E5" HorizontalAlignment="Center"/></StackPanel></Border>
+          </Grid>
+         </Grid>
+         <StackPanel VerticalAlignment="Bottom" Margin="8"><TextBlock x:Name="ProgramNameText" Text="OFF AIR" FontWeight="Bold"/></StackPanel>
+         <Grid VerticalAlignment="Bottom" Height="34" Margin="8,0,8,8" Background="#B0091017">
+          <Slider x:Name="OnAirSeekSlider" Minimum="0" Maximum="1" Value="0" Margin="8,0" VerticalAlignment="Center" PreviewMouseLeftButtonDown="OnAirSeekSlider_MouseDown" PreviewMouseLeftButtonUp="OnAirSeekSlider_MouseUp" ToolTip="Seek current On-Air media"/>
+         </Grid>
+        </Grid>
+       </Border>
+      </Grid>
+      <GroupBox Grid.Row="2" Margin="0,8,0,0" Header="CURRENT PROGRAM / SOURCE ITEM LIST" Foreground="#E8EDF5"><ListView x:Name="OnAirContentList" Background="#090E14" BorderBrush="#30465C"><ListView.View><GridView><GridViewColumn Header="#" Width="36" DisplayMemberBinding="{Binding Index}"/><GridViewColumn Header="MEDIA" Width="210" DisplayMemberBinding="{Binding Name}"/><GridViewColumn Header="DESCRIPTION" Width="190" DisplayMemberBinding="{Binding Description}"/><GridViewColumn Header="FORMAT" Width="72" DisplayMemberBinding="{Binding Format}"/><GridViewColumn Header="RESOLUTION" Width="90" DisplayMemberBinding="{Binding Resolution}"/><GridViewColumn Header="VIDEO" Width="90" DisplayMemberBinding="{Binding VideoCodec}"/><GridViewColumn Header="AUDIO" Width="115" DisplayMemberBinding="{Binding AudioInfo}"/><GridViewColumn Header="FPS" Width="60" DisplayMemberBinding="{Binding Fps}"/><GridViewColumn Header="DURATION" Width="85" DisplayMemberBinding="{Binding MediaDuration}"/><GridViewColumn Header="FILE PATH" Width="280" DisplayMemberBinding="{Binding FilePath}"/></GridView></ListView.View></ListView></GroupBox>
+     </Grid>
+    </Border>
+    <Border Grid.Column="1" Grid.Row="1" Background="#101923" CornerRadius="7">
+     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+      <TextBlock Text="ON AIR AUDIO LEVEL" FontWeight="Bold" FontSize="15" Foreground="#79C8FF" Margin="0,0,0,8"/>
+      <Border Background="#080D13" BorderBrush="#30465C" BorderThickness="1" CornerRadius="6" Padding="8">
+       <StackPanel>
+        <DockPanel><TextBlock x:Name="AudioChannelLayoutText" Text="OUTPUT L/R" Foreground="#AFC7DA" FontSize="10"/><TextBlock x:Name="AudioPeakText" DockPanel.Dock="Right" Text="PEAK -∞ dBFS" Foreground="#FFD56A" FontFamily="Consolas" FontSize="10"/></DockPanel>
+        <Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/><ColumnDefinition Width="54"/></Grid.ColumnDefinitions><TextBlock Text="L" FontWeight="Bold" VerticalAlignment="Center"/><ProgressBar x:Name="AudioMeterL" Grid.Column="1" Minimum="0" Maximum="100" Height="14"/><TextBlock x:Name="AudioMeterLText" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas" HorizontalAlignment="Right"/></Grid>
+        <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/><ColumnDefinition Width="54"/></Grid.ColumnDefinitions><TextBlock Text="R" FontWeight="Bold" VerticalAlignment="Center"/><ProgressBar x:Name="AudioMeterR" Grid.Column="1" Minimum="0" Maximum="100" Height="14"/><TextBlock x:Name="AudioMeterRText" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas" HorizontalAlignment="Right"/></Grid>
+        <TextBlock Text="Actual playout output level • source channel layout is shown when detected" Foreground="#71879B" FontSize="9" Margin="0,5,0,0"/>
+       </StackPanel>
+      </Border>
+      <Separator Margin="0,10"/>
+      <TextBlock Text="SOURCE / SCHEDULE DETAILS" FontWeight="Bold" Foreground="#C89BFF"/>
+      <TextBlock x:Name="DashSourceDetailsText" Text="No active source" TextWrapping="Wrap" Margin="0,5,0,0"/>
+     </StackPanel></ScrollViewer>
+    </Border>
+   </Grid>
+
+   <!-- INSTANT PLAYLIST integrated workspace -->
+   <Grid x:Name="InstantWorkspace" Visibility="Collapsed">
+    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition x:Name="InstantEditorRow" Height="0"/></Grid.RowDefinitions>
+   <Border Grid.Row="0" Background="#101923" CornerRadius="7" Margin="0">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <DockPanel Margin="0,0,0,6"><TextBlock Text="INSTANT PLAYLIST" FontWeight="Bold" FontSize="15" Foreground="#79C8FF" VerticalAlignment="Center"/><TextBlock x:Name="PlaylistCountText" Text="0 ITEMS" HorizontalAlignment="Right" Foreground="#9CA8B8"/></DockPanel>
+     <WrapPanel Grid.Row="1" Margin="0,0,0,7">
+      <Button Style="{StaticResource MainGreenIcon}" Content="&#xE710;" FontFamily="Segoe MDL2 Assets" ToolTip="New / Clear Instant Playlist" Click="Clear_Click"/>
+      <Button Style="{StaticResource MainBlueIcon}" Content="&#xE8E5;" FontFamily="Segoe MDL2 Assets" ToolTip="Load Instant Playlist" Click="LoadPlaylist_Click"/>
+      <Button Style="{StaticResource MainBlueIcon}" Content="&#xE74E;" FontFamily="Segoe MDL2 Assets" ToolTip="Save Instant Playlist" Click="SavePlaylist_Click"/>
+      <Button Style="{StaticResource MainGreenIcon}" Content="&#xE8B7;" FontFamily="Segoe MDL2 Assets" ToolTip="Add File" Click="AddFile_Click"/>
+      <Button Style="{StaticResource MainGreenIcon}" Content="&#xE8F4;" FontFamily="Segoe MDL2 Assets" ToolTip="Add Folder / Multi Add" Click="AddFolder_Click"/>
+      <Button Style="{StaticResource MainCyanIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Preview / Edit Selected" Click="Preview_Click"/>
+      <Button Style="{StaticResource MainPurpleIcon}" Content="&#xE893;" FontFamily="Segoe MDL2 Assets" ToolTip="Set Next" Click="SetNext_Click"/>
+      <Button Style="{StaticResource MainAmberIcon}" Content="&#xE7C1;" FontFamily="Segoe MDL2 Assets" ToolTip="BREAK NOW — play a commercial/break clip, then resume or re-sync scheduled program" Click="BreakNow_Click"/>
+      <Button Style="{StaticResource MainBlueIcon}" Content="&#xE74A;" FontFamily="Segoe MDL2 Assets" ToolTip="Move Up" Click="Up_Click"/>
+      <Button Style="{StaticResource MainBlueIcon}" Content="&#xE74B;" FontFamily="Segoe MDL2 Assets" ToolTip="Move Down" Click="Down_Click"/>
+      <Button Style="{StaticResource MainAmberIcon}" Content="&#xE8B1;" FontFamily="Segoe MDL2 Assets" ToolTip="Shuffle" Click="Shuffle_Click"/>
+      <Button Style="{StaticResource MainRedIcon}" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Remove" Click="Remove_Click"/>
+      <Button Style="{StaticResource MainRedIcon}" Content="&#xE894;" FontFamily="Segoe MDL2 Assets" ToolTip="Clear Playlist" Click="Clear_Click"/>
+     </WrapPanel>
+     <ListView x:Name="PlaylistList" Grid.Row="2" SelectionChanged="PlaylistList_SelectionChanged" Background="#090E14" Foreground="White" BorderBrush="#30465C">
+      <ListView.ContextMenu><ContextMenu Opened="InstantContextMenu_Opened">
+       <MenuItem Header="▶  PLAY NOW" Click="InstantPlayNow_Click"/><MenuItem Header="⏭  PLAY NEXT" Click="InstantPlayNext_Click"/><Separator/>
+       <MenuItem Header="＋  Insert Before" Click="InstantInsertBefore_Click"/><MenuItem Header="＋  Insert After" Click="InstantInsertAfter_Click"/><MenuItem Header="⟳  Replace / Change File" Click="InstantReplaceFile_Click"/><MenuItem x:Name="InstantAudioContextMenu" Header="🎧  Audio Language"/><MenuItem Header="ⓘ  Properties" Click="InstantProperties_Click"/><Separator/>
+       <MenuItem Header="↑  Move Up" Click="Up_Click"/><MenuItem Header="↓  Move Down" Click="Down_Click"/><MenuItem Header="▣  Duplicate" Click="InstantDuplicate_Click"/><MenuItem Header="⤨  Shuffle Playlist" Click="Shuffle_Click"/><Separator/><MenuItem Header="✕  Remove" Click="Remove_Click"/>
+      </ContextMenu></ListView.ContextMenu>
+      <ListView.View><GridView>
+       <GridViewColumn Header="#" Width="38" DisplayMemberBinding="{Binding Index}"/>
+       <GridViewColumn Header="MEDIA" Width="245" DisplayMemberBinding="{Binding Name}"/>
+       <GridViewColumn Header="EST START" Width="92" DisplayMemberBinding="{Binding StartTimeText}"/>
+       <GridViewColumn Header="IN" Width="94" DisplayMemberBinding="{Binding InText}"/>
+       <GridViewColumn Header="OUT" Width="94" DisplayMemberBinding="{Binding OutText}"/>
+       <GridViewColumn Header="PLAY DUR" Width="86" DisplayMemberBinding="{Binding PlayDurationText}"/>
+       <GridViewColumn Header="AUDIO" Width="104"><GridViewColumn.CellTemplate><DataTemplate><ComboBox ItemsSource="{Binding AvailableAudioLanguages}" SelectedItem="{Binding AudioLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectionChanged="InstantAudioLanguage_SelectionChanged" MinWidth="92" Height="24" ToolTip="Audio Language / Track"/></DataTemplate></GridViewColumn.CellTemplate></GridViewColumn>
+       <GridViewColumn Header="DESCRIPTION" Width="220" DisplayMemberBinding="{Binding Description}"/>
+       <GridViewColumn Header="TYPE" Width="62" DisplayMemberBinding="{Binding Type}"/>
+      </GridView></ListView.View>
+     </ListView>
+    </Grid>
+   </Border>
+
+
+   <Border x:Name="InstantEditorBorder" Grid.Row="1" Visibility="Collapsed" Background="#111A24" BorderBrush="#2ECF83" BorderThickness="2" CornerRadius="7" Margin="0,8,0,0">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <DockPanel Margin="0,0,0,6"><TextBlock Text="PREVIEW &amp; EDITOR" FontWeight="Bold" Foreground="#70E7A3"/><Button DockPanel.Dock="Right" Width="116" Height="28" Content="✕  CLOSE" Click="InstantEditorClose_Click" ToolTip="Stop preview and close editor"/></DockPanel>
+     <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Grid Grid.Column="0"><Grid.RowDefinitions><RowDefinition Height="185"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+       <Border Background="#020509" BorderBrush="#3E5B76" BorderThickness="1" CornerRadius="3"><Grid><Image x:Name="PreviewImage" Stretch="Fill"/><TextBlock x:Name="InstantPreviewEmptyText" Text="Preview" Foreground="#6F7C8D" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid></Border>
+       <TextBlock Grid.Row="1" x:Name="PreviewNameText" Text="No preview" Margin="0,5,0,3" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+       <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center"><Button Style="{StaticResource MainGreenIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Play Preview" Click="PreviewPlay_Click"/><Button Style="{StaticResource MainAmberIcon}" Content="&#xE769;" FontFamily="Segoe MDL2 Assets" ToolTip="Pause / Resume Preview" Click="PreviewPause_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Stop and close Preview" Click="PreviewStop_Click"/><Button x:Name="PreviewMuteButton" Style="{StaticResource MainCyanIcon}" Content="&#xE74F;" FontFamily="Segoe MDL2 Assets" ToolTip="Unmute Instant Preview" Click="PreviewMute_Click"/></StackPanel>
+      </Grid>
+      <Grid Grid.Column="1" Margin="14,0,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+       <DockPanel><TextBlock Text="PRECISION SEEK / IN–OUT" FontWeight="Bold"/><TextBlock x:Name="InstantPlayheadText" DockPanel.Dock="Right" Text="PLAYHEAD 00:00:00.000" Foreground="#63E7E5"/></DockPanel>
+       <Grid Grid.Row="1" Margin="0,7,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="96"/><ColumnDefinition Width="*"/><ColumnDefinition Width="96"/></Grid.ColumnDefinitions><TextBlock x:Name="InstantCurrentText" Text="00:00:00.000" VerticalAlignment="Center" Foreground="#9FD9FF"/><Slider Grid.Column="1" x:Name="InstantSeekSlider" Minimum="0" Maximum="1" Margin="8,0" Height="30" IsMoveToPointEnabled="True" PreviewMouseLeftButtonDown="InstantSeek_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="InstantSeek_PreviewMouseLeftButtonUp" ValueChanged="InstantSeek_ValueChanged"/><TextBlock Grid.Column="2" x:Name="InstantTotalText" Text="00:00:00.000" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#9FD9FF"/></Grid>
+       <Grid Grid.Row="2" Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="145"/><ColumnDefinition Width="18"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="145"/><ColumnDefinition Width="18"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="145"/></Grid.ColumnDefinitions><TextBlock Text="IN" Foreground="#65E38C" FontWeight="Bold" VerticalAlignment="Center"/><TextBox Grid.Column="1" x:Name="InstantInText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/><TextBlock Grid.Column="3" Text="OUT" Foreground="#FF8D8D" FontWeight="Bold" VerticalAlignment="Center"/><TextBox Grid.Column="4" x:Name="InstantOutText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/><TextBlock Grid.Column="6" Text="DURATION" Foreground="#FFD36A" FontWeight="Bold" VerticalAlignment="Center"/><TextBox Grid.Column="7" x:Name="InstantDurationText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/></Grid>
+       <WrapPanel Grid.Row="3" Margin="0,7,0,0">
+        <Button Width="70" Foreground="#9FD9FF" Click="InstantFrameBack_Click" ToolTip="Seek exactly one source frame backward"><TextBlock Text="-1F" FontWeight="Bold"/></Button>
+        <Button Width="70" Foreground="#9FD9FF" Click="InstantFrameForward_Click" ToolTip="Seek exactly one source frame forward"><TextBlock Text="+1F" FontWeight="Bold"/></Button>
+        <Button Width="86" Foreground="#65E38C" Click="InstantSetIn_Click" ToolTip="Mark current playhead as IN"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B0;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="IN" FontWeight="Bold"/></StackPanel></Button>
+        <Button Width="90" Foreground="#FF8D8D" Click="InstantSetOut_Click" ToolTip="Mark current playhead as OUT"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B0;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="OUT" FontWeight="Bold"/></StackPanel></Button>
+        <Button Width="112" Foreground="#63E7E5" Click="InstantApplyInOut_Click" ToolTip="Apply and save IN / OUT"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="SET" FontWeight="Bold"/></StackPanel></Button>
+        <Button Width="120" Foreground="#FFD36A" Click="InstantResetInOut_Click" ToolTip="Reset to full source"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE777;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="RESET" FontWeight="Bold"/></StackPanel></Button>
+        <Button Width="128" Foreground="#C89BFF" Click="InstantSplit_Click" ToolTip="Split into two non-destructive playlist items"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8C6;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="SPLIT" FontWeight="Bold"/></StackPanel></Button>
+       </WrapPanel>
+       <Grid Grid.Row="4" Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="160"/><ColumnDefinition Width="95"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="AUDIO LANGUAGE" FontSize="11" Foreground="#9EABBC" VerticalAlignment="Center"/><ComboBox Grid.Column="1" x:Name="InstantEditorAudioCombo" Height="28" SelectionChanged="InstantEditorAudio_SelectionChanged"/><TextBlock Grid.Column="2" Text="DESCRIPTION" FontSize="11" Foreground="#9EABBC" VerticalAlignment="Center" Margin="12,0,0,0"/><TextBox Grid.Column="3" x:Name="InstantDescriptionBox" Height="30" LostFocus="InstantDescriptionBox_LostFocus"/></Grid>
+       <TextBlock Grid.Row="5" Margin="0,7,0,0" Foreground="#75869A" TextWrapping="Wrap" Text="Non-destructive edit. IN / OUT / Description are saved with the Instant Playlist and used by Play Now / Play Next."/>
+      </Grid>
+     </Grid>
+    </Grid>
+   </Border>
+
+
+   </Grid>
+
+   <!-- PROGRAM MANAGER integrated in the Main Player; no popup window. -->
+   <Border x:Name="ProgramWorkspaceHost" Visibility="Collapsed" Background="#0B1017" CornerRadius="7" BorderBrush="#6E52A3" BorderThickness="1">
+    <local:ProgramWorkspace x:Name="EmbeddedProgramManager"/>
+   </Border>
+
+   <!-- SCHEDULER + SCHEDULE LIST integrated as one full workspace. -->
+   <Border x:Name="SchedulerWorkspace" Visibility="Collapsed" Background="#101923" CornerRadius="7" BorderBrush="#2B6B76" BorderThickness="1">
+    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <DockPanel><StackPanel><TextBlock Text="SCHEDULER" FontSize="18" FontWeight="Bold" Foreground="#63E7E5"/><TextBlock Text="Create, load, save and manage all scheduled media / playlists / Programs here." Foreground="#8EA5BA"/></StackPanel><TextBlock DockPanel.Dock="Right" Text="FULL SCHEDULE LIST" Foreground="#9FD9FF" VerticalAlignment="Center" FontWeight="Bold"/></DockPanel>
+     <WrapPanel Grid.Row="1" Margin="0,10,0,10"><Button Style="{StaticResource MainGreenIcon}" Content="&#xE787;" FontFamily="Segoe MDL2 Assets" ToolTip="Add Schedule for selected Instant media" Click="AddSchedule_Click"/><Button Style="{StaticResource MainCyanIcon}" Content="&#xE8FD;" FontFamily="Segoe MDL2 Assets" ToolTip="Add Schedule for saved playlist" Click="AddPlaylistSchedule_Click"/><Button Style="{StaticResource MainPurpleIcon}" Content="&#xE8F1;" FontFamily="Segoe MDL2 Assets" ToolTip="Add Schedule for saved Program" Click="AddProgramSchedule_Click"/><Button Style="{StaticResource MainBlueIcon}" Content="&#xE74E;" FontFamily="Segoe MDL2 Assets" ToolTip="Save Schedule" Click="SaveSchedule_Click"/><Button Style="{StaticResource MainBlueIcon}" Content="&#xE8E5;" FontFamily="Segoe MDL2 Assets" ToolTip="Load Schedule" Click="LoadSchedule_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Remove selected Schedule" Click="RemoveSchedule_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE894;" FontFamily="Segoe MDL2 Assets" ToolTip="Clear Schedule" Click="ClearSchedule_Click"/></WrapPanel>
+     <ListView Grid.Row="2" x:Name="ScheduleList" Background="#090E14" Foreground="#E8EDF5" BorderBrush="#2D3745"><ListView.View><GridView><GridViewColumn Header="START" Width="170" DisplayMemberBinding="{Binding TimeText}"/><GridViewColumn Header="END" Width="170" DisplayMemberBinding="{Binding EndTimeText}"/><GridViewColumn Header="TYPE" Width="90" DisplayMemberBinding="{Binding Kind}"/><GridViewColumn Header="PROGRAM / DESCRIPTION" Width="360" DisplayMemberBinding="{Binding Name}"/><GridViewColumn Header="START MODE" Width="110" DisplayMemberBinding="{Binding StartModeText}"/><GridViewColumn Header="AUTO CHAIN" Width="100" DisplayMemberBinding="{Binding AutoChain}"/></GridView></ListView.View></ListView>
+    </Grid>
+   </Border>
+
+   <!-- SETTINGS integrated workspace: main-output display and processing preferences -->
+   <Border x:Name="StreamWorkspace" Visibility="Collapsed" Background="#0D141D" CornerRadius="8" BorderBrush="#2C7D74" BorderThickness="1" Padding="4">
+    <Grid Margin="14">
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <DockPanel Margin="3,0,3,10">
+      <StackPanel><TextBlock Text="STREAMING" FontSize="22" FontWeight="Bold" Foreground="#5FE6C8"/><TextBlock Text="Independent persistent RTMP / DVB UDP / DVB SRT output profiles" Foreground="#9FB0C0" Margin="0,3,0,0"/></StackPanel>
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Border Background="#10231F" BorderBrush="#2C7D74" BorderThickness="1" CornerRadius="5" Padding="8,4"><TextBlock x:Name="StreamRuntimeAuditText" Text="FFMPEG • DETECTING..." Foreground="#69F0C5" FontSize="10"/></Border><Button Margin="7,0,0,0" Style="{StaticResource MainCyanIcon}" Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" ToolTip="Refresh FFmpeg encoders, protocols and network interfaces" Click="StreamRefreshCapabilities_Click"/></StackPanel>
+     </DockPanel>
+
+     <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+      <!-- RTMP -->
+      <Border Grid.Column="0" Background="#101B25" BorderBrush="#2C7D74" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,5,0">
+       <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+        <DockPanel><StackPanel><TextBlock Text="RTMP STREAMING" FontSize="16" FontWeight="Bold" Foreground="#62E6C7"/><TextBlock Text="RTMP / RTMPS publish" Foreground="#7890A2" FontSize="10"/></StackPanel><Border DockPanel.Dock="Right" Background="#142530" CornerRadius="5" Padding="7,3"><TextBlock x:Name="RtmpStatusText" Text="STOPPED" Foreground="#FF8795" FontSize="10" FontWeight="Bold"/></Border></DockPanel>
+        <TextBlock Text="RESOLUTION • FOLLOWS SCREEN" Margin="0,12,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="RtmpResolutionCombo" Style="{StaticResource StreamComboBox}" Height="36" MaxDropDownHeight="260" IsEnabled="False" ToolTip="Follows SCREEN → applied main output resolution for one common Final Program raster."/>
+        <TextBlock Text="VIDEO ENCODER • AUTO GPU / ACTUAL FFMPEG" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="RtmpVideoEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <TextBlock Text="AUDIO ENCODER" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="RtmpAudioEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <Border Margin="0,10,0,0" Background="#0B151E" BorderBrush="#29455A" BorderThickness="1" CornerRadius="7" Padding="8">
+         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,5,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="VIDEO RATE" FontSize="10" FontWeight="Bold" Foreground="#63E7E5"/><TextBlock DockPanel.Dock="Right" Text="BANDWIDTH" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="RtmpVideoBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select Mbps/kbps or type a custom bitrate"/></StackPanel>
+          <StackPanel Grid.Column="1" Margin="5,0,0,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="AUDIO RATE" FontSize="10" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock DockPanel.Dock="Right" Text="kbps" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="RtmpAudioBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select audio bitrate or type a custom kbps value"/></StackPanel>
+         </Grid>
+        </Border>
+        <TextBlock Text="NETWORK INTERFACE" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="RtmpNicCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <TextBlock Text="SERVER / STREAM URL" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><TextBox x:Name="RtmpUrlBox" Height="36" ToolTip="Example: rtmp://server/app/stream-key"/>
+        <CheckBox x:Name="RtmpAutoStartCheck" Content="AUTO START WITH PLAYOUT" Margin="0,10,0,0" Foreground="#B8C7D5"/>
+        <WrapPanel Margin="0,12,0,0"><Button Style="{StaticResource MainGreenIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Save and Start RTMP" Click="RtmpStart_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Stop RTMP and disable auto-start" Click="RtmpStop_Click"/><Button Style="{StaticResource MainBlueIcon}" Content="&#xE74E;" FontFamily="Segoe MDL2 Assets" ToolTip="Save RTMP profile" Click="StreamSave_Click"/></WrapPanel>
+        <TextBlock x:Name="RtmpDetailText" Text="Profile saved independently." TextWrapping="Wrap" Foreground="#7890A2" FontSize="10" Margin="0,8,0,0"/>
+       </StackPanel></ScrollViewer>
+      </Border>
+
+      <!-- DVB UDP -->
+      <Border Grid.Column="1" Background="#101B25" BorderBrush="#4D6D93" BorderThickness="1" CornerRadius="8" Padding="12" Margin="5,0,5,0">
+       <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+        <DockPanel><StackPanel><TextBlock Text="DVB UDP STREAMING" FontSize="16" FontWeight="Bold" Foreground="#82C7FF"/><TextBlock Text="MPEG-TS over UDP / multicast" Foreground="#7890A2" FontSize="10"/></StackPanel><Border DockPanel.Dock="Right" Background="#142530" CornerRadius="5" Padding="7,3"><TextBlock x:Name="UdpStatusText" Text="STOPPED" Foreground="#FF8795" FontSize="10" FontWeight="Bold"/></Border></DockPanel>
+        <TextBlock Text="RESOLUTION • FOLLOWS SCREEN" Margin="0,12,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="UdpResolutionCombo" Style="{StaticResource StreamComboBox}" Height="36" MaxDropDownHeight="260" IsEnabled="False" ToolTip="Follows SCREEN → applied main output resolution for one common Final Program raster."/>
+        <TextBlock Text="VIDEO ENCODER • AUTO GPU / ACTUAL FFMPEG" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="UdpVideoEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <TextBlock Text="AUDIO ENCODER" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="UdpAudioEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <Border Margin="0,10,0,0" Background="#0B151E" BorderBrush="#29455A" BorderThickness="1" CornerRadius="7" Padding="8">
+         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,5,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="VIDEO RATE" FontSize="10" FontWeight="Bold" Foreground="#63E7E5"/><TextBlock DockPanel.Dock="Right" Text="BANDWIDTH" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="UdpVideoBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select Mbps/kbps or type a custom bitrate"/></StackPanel>
+          <StackPanel Grid.Column="1" Margin="5,0,0,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="AUDIO RATE" FontSize="10" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock DockPanel.Dock="Right" Text="kbps" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="UdpAudioBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select audio bitrate or type a custom kbps value"/></StackPanel>
+         </Grid>
+        </Border>
+        <TextBlock Text="LAN INTERFACE" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="UdpNicCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <TextBlock Text="DESTINATIONS • MULTI IP" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ListBox x:Name="UdpDestinationsList" Height="65" Background="#091018" Foreground="#DDE7F0"/>
+        <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="UdpHostBox" Text="239.1.1.1" Height="34"/><TextBox Grid.Column="1" x:Name="UdpPortBox" Text="1234" Height="34" Margin="4,0"/><Button Grid.Column="2" Style="{StaticResource MainCyanIcon}" Content="+" ToolTip="Add destination" Click="UdpAddDestination_Click"/></Grid>
+        <Button HorizontalAlignment="Left" Style="{StaticResource MainRedIcon}" Content="−" ToolTip="Remove selected destination" Click="UdpRemoveDestination_Click"/>
+        <TextBlock Text="DVB MPEG-TS PID / SERVICE" Margin="0,8,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/>
+        <UniformGrid Columns="4"><TextBox x:Name="UdpVideoPidBox" Text="256" ToolTip="Video PID"/><TextBox x:Name="UdpAudioPidBox" Text="257" ToolTip="Audio PID"/><TextBox x:Name="UdpPmtPidBox" Text="4096" ToolTip="PMT PID"/><TextBox x:Name="UdpServiceIdBox" Text="1" ToolTip="Service ID"/><TextBox x:Name="UdpTsidBox" Text="1" ToolTip="TSID"/><TextBox x:Name="UdpOnidBox" Text="1" ToolTip="ONID"/><TextBox x:Name="UdpMuxRateBox" Text="8000000" ToolTip="Mux rate bits/s"/><TextBox x:Name="UdpPcrBox" Text="20" ToolTip="PCR period ms"/></UniformGrid>
+        <CheckBox x:Name="UdpAutoStartCheck" Content="AUTO START WITH PLAYOUT" Margin="0,9,0,0" Foreground="#B8C7D5"/>
+        <WrapPanel Margin="0,10,0,0"><Button Style="{StaticResource MainGreenIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Save and Start DVB UDP" Click="UdpStart_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Stop DVB UDP and disable auto-start" Click="UdpStop_Click"/><Button Style="{StaticResource MainBlueIcon}" Content="&#xE74E;" FontFamily="Segoe MDL2 Assets" ToolTip="Save DVB UDP profile" Click="StreamSave_Click"/></WrapPanel>
+        <TextBlock x:Name="UdpDetailText" Text="Each destination is saved." TextWrapping="Wrap" Foreground="#7890A2" FontSize="10" Margin="0,8,0,0"/>
+       </StackPanel></ScrollViewer>
+      </Border>
+
+      <!-- DVB SRT -->
+      <Border Grid.Column="2" Background="#101B25" BorderBrush="#725E93" BorderThickness="1" CornerRadius="8" Padding="12" Margin="5,0,0,0">
+       <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+        <DockPanel><StackPanel><TextBlock Text="DVB SRT STREAMING" FontSize="16" FontWeight="Bold" Foreground="#D4A8FF"/><TextBlock Text="MPEG-TS over Secure Reliable Transport" Foreground="#7890A2" FontSize="10"/></StackPanel><Border DockPanel.Dock="Right" Background="#142530" CornerRadius="5" Padding="7,3"><TextBlock x:Name="SrtStatusText" Text="STOPPED" Foreground="#FF8795" FontSize="10" FontWeight="Bold"/></Border></DockPanel>
+        <TextBlock Text="RESOLUTION • FOLLOWS SCREEN" Margin="0,12,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="SrtResolutionCombo" Style="{StaticResource StreamComboBox}" Height="36" MaxDropDownHeight="260" IsEnabled="False" ToolTip="Follows SCREEN → applied main output resolution for one common Final Program raster."/>
+        <TextBlock Text="VIDEO ENCODER • AUTO GPU / ACTUAL FFMPEG" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="SrtVideoEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <TextBlock Text="AUDIO ENCODER" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="SrtAudioEncoderCombo" Style="{StaticResource StreamComboBox}" Height="36"/>
+        <Border Margin="0,10,0,0" Background="#0B151E" BorderBrush="#29455A" BorderThickness="1" CornerRadius="7" Padding="8">
+         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,5,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="VIDEO RATE" FontSize="10" FontWeight="Bold" Foreground="#63E7E5"/><TextBlock DockPanel.Dock="Right" Text="BANDWIDTH" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="SrtVideoBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select Mbps/kbps or type a custom bitrate"/></StackPanel>
+          <StackPanel Grid.Column="1" Margin="5,0,0,0"><DockPanel Margin="0,0,0,4"><TextBlock Text="AUDIO RATE" FontSize="10" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock DockPanel.Dock="Right" Text="kbps" FontSize="9" Foreground="#668096"/></DockPanel><ComboBox x:Name="SrtAudioBitrateCombo" Style="{StaticResource StreamBitrateCombo}" IsEditable="True" ToolTip="Select audio bitrate or type a custom kbps value"/></StackPanel>
+         </Grid>
+        </Border>
+        <TextBlock Text="LAN INTERFACE / ROUTE" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ComboBox x:Name="SrtNicCombo" Style="{StaticResource StreamComboBox}" Height="36" ToolTip="Selected NIC is saved and shown for routing verification; FFmpeg SRT binding availability is runtime dependent."/>
+        <TextBlock Text="DESTINATIONS • MULTI IP" Margin="0,9,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/><ListBox x:Name="SrtDestinationsList" Height="65" Background="#091018" Foreground="#DDE7F0"/>
+        <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="70"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SrtHostBox" Text="127.0.0.1" Height="34"/><TextBox Grid.Column="1" x:Name="SrtPortBox" Text="9000" Height="34" Margin="4,0"/><Button Grid.Column="2" Style="{StaticResource MainCyanIcon}" Content="+" ToolTip="Add destination" Click="SrtAddDestination_Click"/></Grid>
+        <Button HorizontalAlignment="Left" Style="{StaticResource MainRedIcon}" Content="−" ToolTip="Remove selected destination" Click="SrtRemoveDestination_Click"/>
+        <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel Margin="0,0,4,0"><TextBlock Text="SRT MODE" FontSize="10" Foreground="#7F94A8"/><ComboBox x:Name="SrtModeCombo" Style="{StaticResource StreamComboBox}" Height="34"><ComboBoxItem Content="caller"/><ComboBoxItem Content="listener"/><ComboBoxItem Content="rendezvous"/></ComboBox></StackPanel><StackPanel Grid.Column="1" Margin="4,0,0,0"><TextBlock Text="LATENCY ms" FontSize="10" Foreground="#7F94A8"/><TextBox x:Name="SrtLatencyBox" Text="120" Height="34"/></StackPanel></Grid>
+        <TextBlock Text="PASSPHRASE • OPTIONAL" Margin="0,8,0,3" FontSize="10" Foreground="#7F94A8"/><PasswordBox x:Name="SrtPassphraseBox" Height="34" ToolTip="SRT encryption passphrase; 10–79 characters when used"/>
+        <TextBlock Text="DVB MPEG-TS PID / SERVICE" Margin="0,8,0,3" FontSize="10" FontWeight="Bold" Foreground="#7F94A8"/>
+        <UniformGrid Columns="4"><TextBox x:Name="SrtVideoPidBox" Text="256" ToolTip="Video PID"/><TextBox x:Name="SrtAudioPidBox" Text="257" ToolTip="Audio PID"/><TextBox x:Name="SrtPmtPidBox" Text="4096" ToolTip="PMT PID"/><TextBox x:Name="SrtServiceIdBox" Text="1" ToolTip="Service ID"/><TextBox x:Name="SrtTsidBox" Text="1" ToolTip="TSID"/><TextBox x:Name="SrtOnidBox" Text="1" ToolTip="ONID"/><TextBox x:Name="SrtMuxRateBox" Text="8000000" ToolTip="Mux rate bits/s"/><TextBox x:Name="SrtPcrBox" Text="20" ToolTip="PCR period ms"/></UniformGrid>
+        <CheckBox x:Name="SrtAutoStartCheck" Content="AUTO START WITH PLAYOUT" Margin="0,9,0,0" Foreground="#B8C7D5"/>
+        <WrapPanel Margin="0,10,0,0"><Button Style="{StaticResource MainGreenIcon}" Content="&#xE768;" FontFamily="Segoe MDL2 Assets" ToolTip="Save and Start DVB SRT" Click="SrtStart_Click"/><Button Style="{StaticResource MainRedIcon}" Content="&#xE71A;" FontFamily="Segoe MDL2 Assets" ToolTip="Stop DVB SRT and disable auto-start" Click="SrtStop_Click"/><Button Style="{StaticResource MainBlueIcon}" Content="&#xE74E;" FontFamily="Segoe MDL2 Assets" ToolTip="Save DVB SRT profile" Click="StreamSave_Click"/></WrapPanel>
+        <TextBlock x:Name="SrtDetailText" Text="SRT protocol is enabled only when the detected FFmpeg runtime exposes it." TextWrapping="Wrap" Foreground="#7890A2" FontSize="10" Margin="0,8,0,0"/>
+       </StackPanel></ScrollViewer>
+      </Border>
+     </Grid>
+    </Grid>
+   </Border>
+
+   <Border x:Name="OutputWorkspace" Visibility="Collapsed" Background="#0D141D" CornerRadius="8" BorderBrush="#3A6382" BorderThickness="1">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+     <StackPanel Margin="22" MaxWidth="980" HorizontalAlignment="Center">
+      <DockPanel Margin="0,0,0,16">
+       <StackPanel>
+        <TextBlock Text="BROADCAST OUTPUT" FontSize="22" FontWeight="Bold" Foreground="#8EDCFF"/>
+        <TextBlock Text="Final Program physical display / card outputs" Foreground="#8EA5BA" Margin="0,3,0,0"/>
+       </StackPanel>
+       <Button DockPanel.Dock="Right" Width="150" Height="34" Content="↻  REFRESH DEVICES" Click="OutputRefresh_Click" ToolTip="Refresh graphics-card displays and broadcast-output capabilities"/>
+      </DockPanel>
+
+      <Border Background="#0A171D" BorderBrush="#2C8D72" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,14">
+       <StackPanel>
+        <TextBlock Text="FINAL PROGRAM OUTPUT PATH" Foreground="#69F0C5" FontWeight="Bold"/>
+        <TextBlock Text="These outputs follow the same Final Program picture used by the confidence monitor and streaming bus. Playlist clip changes do not reopen the physical display output." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,3,0,0"/>
+       </StackPanel>
+      </Border>
+
+      <Border Background="#111B27" BorderBrush="#2C7D74" BorderThickness="1" CornerRadius="9" Padding="14" Margin="0,0,0,14">
+       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel>
+         <TextBlock Text="FINAL OUTPUT AUDIO + VIDEO PROCESSING" FontSize="15" FontWeight="Bold" Foreground="#69F0C5"/>
+         <TextBlock Text="One common broadcast processing stage feeds Graphics Output + RTMP + DVB UDP + DVB SRT. Audio EQ/normalize/gain and video color/quality/scale are applied before the Final Program output bus; they are not applied a second time inside each encoder." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,4,18,0"/>
+         <TextBlock x:Name="OutputProcessingSummaryText" Text="VIDEO • SMART SCALE / COLOR   |   AUDIO • NORMALIZE / 10-BAND EQ" Foreground="#FFD36A" FontWeight="SemiBold" Margin="0,8,0,0"/>
+        </StackPanel>
+        <Button Grid.Column="1" Width="150" Height="36" Content="⚙  OPEN PROCESSING" Click="OutputProcessingOpen_Click" ToolTip="Open Audio EQ / correction and Video correction controls" VerticalAlignment="Center"/>
+       </Grid>
+      </Border>
+
+      <Grid>
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <Border Grid.Column="0" Background="#111B27" BorderBrush="#35617D" BorderThickness="1" CornerRadius="10" Padding="18">
+        <StackPanel>
+         <TextBlock Text="GRAPHICS CARD / DISPLAY OUTPUT" FontSize="16" FontWeight="Bold" Foreground="#63E7E5"/>
+         <TextBlock Text="Full-screen Final Program output on a selected Windows GPU display/HDMI output." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,5,0,12"/>
+         <TextBlock Text="DISPLAY" FontSize="10" Foreground="#7F94A8"/>
+         <ComboBox x:Name="GraphicsMonitorCombo" Height="36" Margin="0,5,0,12"/>
+         <StackPanel Orientation="Horizontal">
+          <Button Width="110" Height="36" Content="▶  START" Click="GraphicsOutputStart_Click" ToolTip="Start Final Program full-screen output on selected display"/>
+          <Button Width="110" Height="36" Margin="8,0,0,0" Content="■  STOP" Click="GraphicsOutputStop_Click" ToolTip="Stop graphics-card display output"/>
+         </StackPanel>
+         <TextBlock x:Name="GraphicsOutputStatusText" Text="STOPPED" Foreground="#FFD36A" FontWeight="SemiBold" Margin="0,12,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+       </Border>
+
+       <Border Grid.Column="2" Background="#111B27" BorderBrush="#7657A8" BorderThickness="1.4" CornerRadius="12" Padding="18">
+        <StackPanel>
+         <DockPanel Margin="0,0,0,4" LastChildFill="False">
+          <StackPanel>
+           <TextBlock Text="BLACKMAGIC DECKLINK OUTPUT" FontSize="17" FontWeight="Bold" Foreground="#D8B9FF"/>
+           <TextBlock Text="Native DeckLink SDK hardware routing" Foreground="#8EA5BA" FontSize="10"/>
+          </StackPanel>
+          <Border DockPanel.Dock="Right" Background="#18251F" BorderBrush="#2F725B" BorderThickness="1" CornerRadius="9" Padding="9,4" VerticalAlignment="Center">
+           <TextBlock x:Name="DeckLinkReadyBadge" Text="●  NOT READY" Foreground="#FFD36A" FontWeight="Bold" FontSize="10"/>
+          </Border>
+         </DockPanel>
+         <TextBlock Text="FINAL PROGRAM BUS  →  BLACKMAGIC CARD  →  PHYSICAL OUTPUT  →  VIDEO MODE  →  UYVY + PCM" Foreground="#9FB0C0" TextWrapping="Wrap" FontSize="10" Margin="0,5,0,13"/>
+
+         <TextBlock Text="1  HARDWARE DEVICE / CARD" FontSize="10" Foreground="#7F94A8" FontWeight="SemiBold"/>
+         <ComboBox x:Name="DeckLinkDeviceCombo" Style="{StaticResource StreamComboBox}" Height="36" Margin="0,5,0,10" IsEnabled="False" SelectionChanged="DeckLinkDeviceCombo_SelectionChanged" ToolTip="Exact Blackmagic output devices enumerated by the native DeckLink SDK"/>
+
+         <Grid Margin="0,0,0,10">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="10"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+           <TextBlock Text="2  PHYSICAL OUTPUT" FontSize="10" Foreground="#7F94A8" FontWeight="SemiBold"/>
+           <ComboBox x:Name="DeckLinkConnectionCombo" Style="{StaticResource StreamComboBox}" Height="36" Margin="0,5,0,0" IsEnabled="False" SelectionChanged="DeckLinkConnectionCombo_SelectionChanged" ToolTip="Only output connectors supported by the selected card are shown: SDI / HDMI / Component-YUV / Composite / S-Video etc."/>
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+           <TextBlock Text="3  VIDEO MODE / FRAME RATE • DEFAULT AUTO" FontSize="10" Foreground="#7F94A8" FontWeight="SemiBold"/>
+           <ComboBox x:Name="DeckLinkModeCombo" Style="{StaticResource StreamComboBox}" Height="36" Margin="0,5,0,0" IsEnabled="False" ToolTip="AUTO / MAIN OUTPUT follows the applied SCREEN resolution, FPS and scan. Manual supported DeckLink modes remain available below it."/>
+          </StackPanel>
+         </Grid>
+
+         <Border Background="#0B151E" BorderBrush="#314658" BorderThickness="1" CornerRadius="7" Padding="10" Margin="0,0,0,10">
+          <Grid>
+           <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+           <StackPanel><TextBlock Text="PIXEL FORMAT" FontSize="9" Foreground="#6F8497"/><TextBlock Text="8-BIT YUV 4:2:2 (UYVY)" Foreground="#C9D8E5" FontWeight="SemiBold"/></StackPanel>
+           <StackPanel Grid.Column="1"><TextBlock Text="AUDIO" FontSize="9" Foreground="#6F8497"/><TextBlock Text="48 kHz PCM • 2 CH EMBEDDED" Foreground="#C9D8E5" FontWeight="SemiBold"/></StackPanel>
+          </Grid>
+         </Border>
+
+         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+          <Button x:Name="DeckLinkStartButton" Width="128" Height="38" Content="▶  START OUTPUT" Click="DeckLinkOutputStart_Click" IsEnabled="False" ToolTip="Start only after native bridge, card, physical output and supported mode are all valid"/>
+          <Button x:Name="DeckLinkStopButton" Width="100" Height="38" Margin="8,0,0,0" Content="■  STOP" Click="DeckLinkOutputStop_Click" IsEnabled="False" ToolTip="Stop Blackmagic output"/>
+         </StackPanel>
+         <TextBlock x:Name="DeckLinkOutputStatusText" Text="STOPPED" Foreground="#69F0C5" FontWeight="SemiBold" Margin="0,3,0,8" TextWrapping="Wrap"/>
+         <TextBlock Text="SDK / DEVICE STATUS" FontSize="9" Foreground="#7F94A8"/>
+         <TextBlock x:Name="DeckLinkStatusText" Text="REFRESH TO DETECT" Foreground="#FFD36A" FontWeight="SemiBold" Margin="0,5,0,0" TextWrapping="Wrap" FontSize="10"/>
+         <Border Background="#0A121A" BorderBrush="#3B4E60" BorderThickness="1" CornerRadius="6" Padding="9" Margin="0,12,0,0">
+          <TextBlock Text="Hardware mode is independent of the preview window size. Final Program is scaled/padded to the selected DeckLink raster. START remains locked until bridge + card + physical output + mode are valid." Foreground="#8EA5BA" TextWrapping="Wrap" FontSize="9.5"/>
+         </Border>
+        </StackPanel>
+       </Border>
+      </Grid>
+     </StackPanel>
+    </ScrollViewer>
+   </Border>
+
+   <Border x:Name="ScreenWorkspace" Visibility="Collapsed" Background="#0D141D" CornerRadius="8" BorderBrush="#3A6382" BorderThickness="1">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+     <StackPanel Margin="22" MaxWidth="920" HorizontalAlignment="Center">
+      <DockPanel Margin="0,0,0,16">
+       <StackPanel>
+        <TextBlock Text="SCREEN / OUTPUT" FontSize="22" FontWeight="Bold" Foreground="#8EDCFF"/>
+        <TextBlock Text="Output resolution and audio frequency" Foreground="#8EA5BA" Margin="0,3,0,0"/>
+       </StackPanel>
+       <Border DockPanel.Dock="Right" Background="#182331" BorderBrush="#46637B" BorderThickness="1" CornerRadius="6" Padding="10,5">
+        <TextBlock x:Name="ScreenSavedText" Text="APPLIED" Foreground="#69F0C5" FontSize="10" FontWeight="SemiBold"/>
+       </Border>
+      </DockPanel>
+
+      <Border Background="#0A171D" BorderBrush="#2C8D72" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,14">
+       <StackPanel>
+        <TextBlock Text="OUTPUT ONLY • INPUT REMAINS AUTO SOURCE" Foreground="#69F0C5" FontWeight="Bold"/>
+        <TextBlock Text="Changing a selection does not touch live playback. Choose the required values, then press APPLY CHANGES." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,3,0,0"/>
+       </StackPanel>
+      </Border>
+
+      <Border Background="#111B27" BorderBrush="#35617D" BorderThickness="1" CornerRadius="10" Padding="18">
+       <StackPanel>
+        <TextBlock Text="VIDEO OUTPUT RESOLUTION / FRAME RATE" FontSize="12" FontWeight="Bold" Foreground="#8EDCFF"/>
+        <TextBlock Text="Open the list and scroll to select the required broadcast / cinema output format." Foreground="#7F94A8" Margin="0,3,0,8"/>
+        <ComboBox x:Name="OutputResolutionCombo" Height="38" MaxDropDownHeight="360" IsTextSearchEnabled="True" SelectionChanged="ScreenOutputSetting_Changed" Margin="0,0,0,18">
+         <ComboBoxItem Content="eMVF_Custom"/>
+         <ComboBoxItem Content="eMVF_NTSC"/>
+         <ComboBoxItem Content="eMVF_NTSC_2398"/>
+         <ComboBoxItem Content="eMVF_NTSC_16x9"/>
+         <ComboBoxItem Content="eMVF_PAL"/>
+         <ComboBoxItem Content="eMVF_PAL_16x9"/>
+         <ComboBoxItem Content="eMVF_HD720_50p"/>
+         <ComboBoxItem Content="eMVF_HD720_5994p"/>
+         <ComboBoxItem Content="eMVF_HD720_60p"/>
+         <ComboBoxItem Content="eMVF_HD1080_2398p"/>
+         <ComboBoxItem Content="eMVF_HD1080_24p"/>
+         <ComboBoxItem Content="eMVF_HD1080_25p"/>
+         <ComboBoxItem Content="eMVF_HD1080_2997p"/>
+         <ComboBoxItem Content="eMVF_HD1080_30p"/>
+         <ComboBoxItem Content="eMVF_HD1080_50i"/>
+         <ComboBoxItem Content="eMVF_HD1080_5994i"/>
+         <ComboBoxItem Content="eMVF_HD1080_60i"/>
+         <ComboBoxItem Content="eMVF_HD1080_50p"/>
+         <ComboBoxItem Content="eMVF_HD1080_5994p"/>
+         <ComboBoxItem Content="eMVF_HD1080_60p"/>
+         <ComboBoxItem Content="eMVF_HD1080_9590p"/>
+         <ComboBoxItem Content="eMVF_HD1080_96p"/>
+         <ComboBoxItem Content="eMVF_HD1080_100p"/>
+         <ComboBoxItem Content="eMVF_HD1080_11988p"/>
+         <ComboBoxItem Content="eMVF_HD1080_120p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_2398p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_24p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_25p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_2997p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_30p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_4795p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_48p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_50p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_5994p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_60p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_96p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_100p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_11988p"/>
+         <ComboBoxItem Content="eMVF_2K_DCI_120p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_2398p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_24p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_25p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_2997p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_30p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_50p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_5994p"/>
+         <ComboBoxItem Content="eMVF_UHD_2160_60p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_2398p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_24p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_25p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_2997p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_30p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_50p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_5994p"/>
+         <ComboBoxItem Content="eMVF_4K_DCI_60p"/>
+        </ComboBox>
+
+        <TextBlock Text="AUDIO SAMPLE RATE / FREQUENCY" FontSize="12" FontWeight="Bold" Foreground="#FFD36A"/>
+        <TextBlock Text="Select the required output audio frequency." Foreground="#7F94A8" Margin="0,3,0,8"/>
+        <ComboBox x:Name="OutputSampleRateCombo" Height="38" MaxDropDownHeight="260" SelectionChanged="ScreenOutputSetting_Changed" Margin="0,0,0,18">
+         <ComboBoxItem Content="32000 Hz"/>
+         <ComboBoxItem Content="44100 Hz"/>
+         <ComboBoxItem Content="48000 Hz"/>
+         <ComboBoxItem Content="88200 Hz"/>
+         <ComboBoxItem Content="96000 Hz"/>
+         <ComboBoxItem Content="176400 Hz"/>
+         <ComboBoxItem Content="192000 Hz"/>
+        </ComboBox>
+
+        <Border Background="#0A121A" BorderBrush="#3B4E60" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,14">
+         <StackPanel>
+          <TextBlock Text="CURRENT / PENDING OUTPUT" FontSize="10" Foreground="#7F94A8"/>
+          <TextBlock x:Name="OutputProfileSummaryText" Text="eMVF_PAL • 48000 Hz" Foreground="#8EDCFF" FontSize="15" FontWeight="Bold" TextWrapping="Wrap" Margin="0,5,0,0"/>
+          <TextBlock x:Name="ScreenPendingText" Text="No pending changes" Foreground="#8EA5BA" Margin="0,5,0,0"/>
+         </StackPanel>
+        </Border>
+
+        <Button x:Name="ApplyScreenChangesButton" Content="✓  APPLY CHANGES" Height="42" MinWidth="190" HorizontalAlignment="Right" Click="ApplyScreenChanges_Click" ToolTip="Apply selected output resolution and audio frequency"/>
+       </StackPanel>
+      </Border>
+     </StackPanel>
+    </ScrollViewer>
+   </Border>
+
+   <Border x:Name="SettingsWorkspace" Visibility="Collapsed" Background="#0D141D" CornerRadius="8" BorderBrush="#35546D" BorderThickness="1">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+     <StackPanel Margin="18">
+      <DockPanel Margin="0,0,0,16">
+       <StackPanel><TextBlock Text="SETTINGS" FontSize="22" FontWeight="Bold" Foreground="#9FD9FF"/><TextBlock Text="Main output display and video processing preferences" Foreground="#8EA5BA" Margin="0,3,0,0"/></StackPanel>
+       <Border DockPanel.Dock="Right" Background="#112131" BorderBrush="#3A6382" BorderThickness="1" CornerRadius="6" Padding="10,5"><TextBlock x:Name="SettingsSavedText" Text="AUTO SAVE • D:\Smart Playout\Data\Settings" Foreground="#63E7E5" FontSize="10"/></Border>
+      </DockPanel>
+
+      <Border Background="#111B27" BorderBrush="#35617D" BorderThickness="1" CornerRadius="9" Padding="16" Margin="0,0,0,14">
+       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="340"/></Grid.ColumnDefinitions>
+        <Border Width="54" Height="54" Background="#0A2730" BorderBrush="#2ED1DF" BorderThickness="1" CornerRadius="9" VerticalAlignment="Top"><TextBlock Text="FIT" FontFamily="Segoe UI" FontSize="14" FontWeight="Bold" Foreground="#63E7E5" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+        <StackPanel Grid.Column="1" Margin="8,0,18,0"><TextBlock Text="VIDEO OUTPUT ADJUSTMENT" FontSize="16" FontWeight="Bold" Foreground="#63E7E5"/><TextBlock Text="Controls MAIN + Graphics + RTMP / DVB UDP / DVB SRT final output framing. Source decode timing is not changed." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,5,0,0"/><TextBlock Text="VIDEO SCALE / ASPECT" FontSize="10" FontWeight="Bold" Foreground="#7F94A8" Margin="0,13,0,4"/><ComboBox x:Name="VideoScaleCombo" Height="34" Width="300" HorizontalAlignment="Left" SelectionChanged="VideoScaleCombo_SelectionChanged"><ComboBoxItem Content="SMART SCALE"/><ComboBoxItem Content="16:9"/><ComboBoxItem Content="4:3"/><ComboBoxItem Content="FULL STRETCH"/></ComboBox></StackPanel>
+        <Border Grid.Column="2" Background="#09121A" BorderBrush="#2B435A" BorderThickness="1" CornerRadius="7" Padding="12"><StackPanel><TextBlock Text="OUTPUT FIT PREVIEW" FontSize="10" Foreground="#7F94A8"/><TextBlock x:Name="VideoScaleSettingText" Text="SMART SCALE" FontSize="18" FontWeight="Bold" Foreground="#63E7E5" Margin="0,5,0,0"/><TextBlock Text="Applied to the MAIN confidence monitor and the Final Program writer/output raster." Foreground="#8EA5BA" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Border>
+       </Grid>
+      </Border>
+
+      <Border Background="#111B27" BorderBrush="#5A4F83" BorderThickness="1" CornerRadius="9" Padding="16">
+       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Width="54" Height="54" Background="#21172F" BorderBrush="#9C7AD6" BorderThickness="1" CornerRadius="9" VerticalAlignment="Top"><TextBlock Text="ENG" FontSize="13" FontWeight="Bold" Foreground="#C89BFF" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+        <StackPanel Grid.Column="1" Margin="8,0,16,0"><TextBlock Text="VIDEO DECODE ENGINE" FontSize="16" FontWeight="Bold" Foreground="#C89BFF"/><TextBlock Text="GPU hardware decode with safe CPU fallback, or force CPU software decode." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,5,0,0"/><TextBlock Text="DECODE MODE" FontSize="10" FontWeight="Bold" Foreground="#7F94A8" Margin="0,13,0,4"/><StackPanel Orientation="Horizontal"><Button x:Name="DecodeHardwareButton" Width="126" Height="34" Content="GPU HARDWARE" FontFamily="Segoe UI" Style="{StaticResource MainGreenIcon}" Click="DecodeHardware_Click" ToolTip="Use GPU hardware decoding with software fallback"/><Button x:Name="DecodeSoftwareButton" Width="122" Height="34" Margin="8,0,0,0" Content="CPU SOFTWARE" FontFamily="Segoe UI" Style="{StaticResource MainBlueIcon}" Click="DecodeSoftware_Click" ToolTip="Force CPU software decoding"/></StackPanel><ComboBox x:Name="DecodeModeCombo" Visibility="Collapsed" SelectionChanged="DecodeModeCombo_SelectionChanged"><ComboBoxItem Content="AUTO HARDWARE + SOFTWARE FALLBACK"/><ComboBoxItem Content="SOFTWARE CPU ONLY"/></ComboBox><TextBlock x:Name="DecodeModeStatusText" Text="ACTIVE • GPU / HARDWARE + CPU FALLBACK" Foreground="#79F0A7" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel>
+        <StackPanel Grid.Column="2" Margin="16,0,0,0"><TextBlock Text="VIDEO ENCODE ENGINE" FontSize="16" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock Text="Select GPU hardware preference or CPU software preference for the main output encoder path." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,5,0,0"/><TextBlock Text="ENCODE MODE" FontSize="10" FontWeight="Bold" Foreground="#7F94A8" Margin="0,13,0,4"/><StackPanel Orientation="Horizontal"><Button x:Name="EncodeHardwareButton" Width="126" Height="34" Content="GPU HARDWARE" FontFamily="Segoe UI" Style="{StaticResource MainAmberIcon}" Click="EncodeHardware_Click" ToolTip="Prefer hardware encoder when output engine is connected"/><Button x:Name="EncodeSoftwareButton" Width="122" Height="34" Margin="8,0,0,0" Content="CPU SOFTWARE" FontFamily="Segoe UI" Style="{StaticResource MainBlueIcon}" Click="EncodeSoftware_Click" ToolTip="Prefer CPU software encoder"/></StackPanel><ComboBox x:Name="EncodeModeCombo" Visibility="Collapsed" SelectionChanged="EncodeModeCombo_SelectionChanged"><ComboBoxItem Content="AUTO HARDWARE"/><ComboBoxItem Content="SOFTWARE CPU ONLY"/></ComboBox><TextBlock x:Name="EncodeModeStatusText" Text="ACTIVE • GPU / HARDWARE" Foreground="#FFD36A" FontWeight="SemiBold" Margin="0,8,0,0"/></StackPanel>
+       </Grid>
+      </Border>
+
+      <Border Background="#111B27" BorderBrush="#2C7D74" BorderThickness="1" CornerRadius="9" Padding="16" Margin="0,14,0,0">
+       <StackPanel>
+        <DockPanel><StackPanel><TextBlock Text="VIDEO COLOR CORRECTION / SMART QUALITY" FontSize="16" FontWeight="Bold" Foreground="#69F0C5"/><TextBlock Text="MAIN output processing • source-adaptive correction • neutral manual values preserve source • stable decode/seek/A-V sync path retained" Foreground="#9FB0C0" Margin="0,4,0,0"/></StackPanel><Button DockPanel.Dock="Right" Width="30" Height="28" Padding="0" Style="{StaticResource Modern3DButton}" Foreground="#63E7E5" Click="ResetVideoProcessing_Click" ToolTip="Reset Video"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE777;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/></Button></DockPanel>
+
+        <Border Background="#0A171D" BorderBrush="#2A6C61" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,14,0,12">
+         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,16,0">
+           <TextBlock Text="SMART AUTO QUALITY ADAPTIVE PROCESSING" Foreground="#69F0C5" FontWeight="Bold" FontSize="13"/>
+           <TextBlock Text="Analyzes each source conservatively. SD / 720p / soft legacy material receives stronger clarity, level and color assistance; clean 1080p material receives lighter processing." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,4,0,8"/>
+           <CheckBox x:Name="AutoQualityCheck" Content="ENABLE SMART AUTO FULL-HD ENHANCEMENT" Foreground="#79F0A7" FontWeight="SemiBold" Click="OutputProcessing_Changed"/>
+           <DockPanel Margin="0,8,0,0" LastChildFill="False"><TextBlock Text="AUTO STRENGTH" DockPanel.Dock="Left" Foreground="#7F94A8" FontWeight="Bold"/><TextBlock x:Name="AutoQualityStrengthValue" DockPanel.Dock="Right" Text="55%" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel>
+           <Slider x:Name="AutoQualityStrengthSlider" Minimum="0" Maximum="1" Value="0.55" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Margin="16,0,0,0">
+           <TextBlock Text="WHITE BALANCE" Foreground="#8EDCFF" FontWeight="Bold" FontSize="13"/>
+           <CheckBox x:Name="AutoWhiteBalanceCheck" Content="AUTO WHITE BALANCE" Foreground="#8EDCFF" FontWeight="SemiBold" Click="OutputProcessing_Changed" Margin="0,4,0,7"/>
+           <DockPanel LastChildFill="False"><TextBlock Text="Temperature  •  Cool ↔ Warm" DockPanel.Dock="Left"/><TextBlock x:Name="WhiteTemperatureValue" DockPanel.Dock="Right" Text="0" Foreground="#8EDCFF" FontWeight="Bold"/></DockPanel>
+           <Slider x:Name="WhiteTemperatureSlider" Minimum="-100" Maximum="100" Value="0" TickFrequency="5" ValueChanged="OutputProcessing_Changed"/>
+           <DockPanel LastChildFill="False"><TextBlock Text="Tint  •  Green ↔ Magenta" DockPanel.Dock="Left"/><TextBlock x:Name="WhiteTintValue" DockPanel.Dock="Right" Text="0" Foreground="#8EDCFF" FontWeight="Bold"/></DockPanel>
+           <Slider x:Name="WhiteTintSlider" Minimum="-100" Maximum="100" Value="0" TickFrequency="5" ValueChanged="OutputProcessing_Changed"/>
+          </StackPanel>
+         </Grid>
+        </Border>
+
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+         <StackPanel Margin="0,0,14,0">
+          <TextBlock Text="TONE / LEVEL" Foreground="#7F94A8" FontWeight="Bold" Margin="0,0,0,5"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Brightness" DockPanel.Dock="Left"/><TextBlock x:Name="BrightnessValue" DockPanel.Dock="Right" Text="0.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="BrightnessSlider" Minimum="-0.35" Maximum="0.35" Value="0" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Contrast" DockPanel.Dock="Left"/><TextBlock x:Name="ContrastValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="ContrastSlider" Minimum="0.5" Maximum="1.8" Value="1" TickFrequency="0.1" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Saturation" DockPanel.Dock="Left"/><TextBlock x:Name="SaturationValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="SaturationSlider" Minimum="0" Maximum="2" Value="1" TickFrequency="0.1" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Gamma" DockPanel.Dock="Left"/><TextBlock x:Name="GammaValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="GammaSlider" Minimum="0.5" Maximum="2" Value="1" TickFrequency="0.1" ValueChanged="OutputProcessing_Changed"/>
+         </StackPanel>
+         <StackPanel Grid.Column="1" Margin="7,0,7,0">
+          <TextBlock Text="YUV / BLACK" Foreground="#7F94A8" FontWeight="Bold" Margin="0,0,0,5"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Black Level" DockPanel.Dock="Left"/><TextBlock x:Name="BlackLevelValue" DockPanel.Dock="Right" Text="0" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="BlackLevelSlider" Minimum="-32" Maximum="32" Value="0" TickFrequency="2" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Y Level" DockPanel.Dock="Left"/><TextBlock x:Name="YLevelValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="YLevelSlider" Minimum="0.5" Maximum="1.5" Value="1" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="U Level" DockPanel.Dock="Left"/><TextBlock x:Name="ULevelValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="ULevelSlider" Minimum="0.5" Maximum="1.5" Value="1" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="V Level" DockPanel.Dock="Left"/><TextBlock x:Name="VLevelValue" DockPanel.Dock="Right" Text="1.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="VLevelSlider" Minimum="0.5" Maximum="1.5" Value="1" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+         </StackPanel>
+         <StackPanel Grid.Column="2" Margin="14,0,0,0">
+          <TextBlock Text="DETAIL / SCAN" Foreground="#7F94A8" FontWeight="Bold" Margin="0,0,0,5"/>
+          <DockPanel LastChildFill="False"><TextBlock Text="Video Sharpness" DockPanel.Dock="Left"/><TextBlock x:Name="SharpnessValue" DockPanel.Dock="Right" Text="0.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="SharpnessSlider" Minimum="0" Maximum="2" Value="0" TickFrequency="0.1" ValueChanged="OutputProcessing_Changed"/><DockPanel LastChildFill="False" Margin="0,7,0,0"><TextBlock Text="Restoration / Noise Reduction" DockPanel.Dock="Left"/><TextBlock x:Name="NoiseReductionValue" DockPanel.Dock="Right" Text="0.00" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel><Slider x:Name="NoiseReductionSlider" Minimum="0" Maximum="1" Value="0" TickFrequency="0.05" ValueChanged="OutputProcessing_Changed"/>
+          <CheckBox x:Name="AutoColorCheck" Content="SMART AUTO COLOR / LOW-QUALITY ASSIST" Margin="0,10,0,8" Click="OutputProcessing_Changed" Foreground="#69F0C5"/>
+          <TextBlock Text="SCAN / DEINTERLACE MODE" Foreground="#7F94A8" FontSize="10" FontWeight="Bold"/>
+          <ComboBox x:Name="ScanModeCombo" Height="32" SelectedIndex="0" SelectionChanged="OutputProcessing_Changed"><ComboBoxItem Content="AUTO / SOURCE"/><ComboBoxItem Content="PROGRESSIVE / PASS"/><ComboBoxItem Content="INTERLACED / PASS"/><ComboBoxItem Content="DEINTERLACE / LINE BLEND"/></ComboBox>
+          <TextBlock Text="Manual controls show their live value at all times. Smart Auto is source-adaptive and deliberately limited to avoid artificial over-processing." Foreground="#7890A4" FontSize="10" TextWrapping="Wrap" Margin="0,9,0,0"/>
+         </StackPanel>
+        </Grid>
+       </StackPanel>
+      </Border>
+
+      <Border Background="#111B27" BorderBrush="#6C5B32" BorderThickness="1" CornerRadius="9" Padding="16" Margin="0,14,0,0">
+       <StackPanel>
+        <DockPanel><StackPanel><TextBlock Text="MASTER AUDIO CORRECTION / DSP" FontSize="16" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock Text="Program output audio processing • per-player PCM DSP • 10-band EQ chosen for realtime broadcast stability and low CPU" Foreground="#9FB0C0" Margin="0,4,0,0"/></StackPanel><Button DockPanel.Dock="Right" Width="30" Height="28" Padding="0" Style="{StaticResource Modern3DButton}" Foreground="#FFD36A" Click="ResetAudioProcessing_Click" ToolTip="Reset Audio"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE777;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/></Button></DockPanel>
+        <Grid Margin="0,14,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+         <StackPanel Margin="0,0,12,0"><DockPanel LastChildFill="False"><TextBlock Text="MASTER GAIN (dB)" Foreground="#7F94A8"/><TextBlock x:Name="MasterGainValue" DockPanel.Dock="Right" Text="0.0 dB" Foreground="#FFD36A" FontWeight="Bold"/></DockPanel><Slider x:Name="MasterGainSlider" Minimum="-24" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Grid.Column="1" Margin="4,0,12,0"><DockPanel LastChildFill="False"><TextBlock Text="BASS (dB)" Foreground="#7F94A8"/><TextBlock x:Name="BassValue" DockPanel.Dock="Right" Text="0.0 dB" Foreground="#FFD36A" FontWeight="Bold"/></DockPanel><Slider x:Name="BassSlider" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Grid.Column="2" Margin="4,0,12,0"><DockPanel LastChildFill="False"><TextBlock Text="TREBLE (dB)" Foreground="#7F94A8"/><TextBlock x:Name="TrebleValue" DockPanel.Dock="Right" Text="0.0 dB" Foreground="#FFD36A" FontWeight="Bold"/></DockPanel><Slider x:Name="TrebleSlider" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Grid.Column="3"><DockPanel LastChildFill="False"><TextBlock Text="BALANCE L / R" Foreground="#7F94A8"/><TextBlock x:Name="BalanceValue" DockPanel.Dock="Right" Text="CENTER" Foreground="#FFD36A" FontWeight="Bold"/></DockPanel><Slider x:Name="BalanceSlider" Minimum="-1" Maximum="1" Value="0" TickFrequency="0.1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12"><CheckBox x:Name="AudioNormalizeCheck" Content="AUTO NORMALIZE" IsChecked="True" Click="OutputProcessing_Changed" Foreground="#79F0A7" Margin="0,0,24,0"/><CheckBox x:Name="AudioLoudnessCheck" Content="LOUDNESS / HOT-MASTER CONTROL" Click="OutputProcessing_Changed" Foreground="#FFD36A"/></StackPanel>
+        <TextBlock Text="10-BAND GRAPHIC EQUALIZER  •  -12 dB to +12 dB" Foreground="#7F94A8" FontWeight="Bold" Margin="0,0,0,8"/>
+        <UniformGrid Columns="10">
+         <StackPanel Margin="3"><TextBlock Text="31" HorizontalAlignment="Center"/><TextBlock x:Name="Eq31Value" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq31" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="62" HorizontalAlignment="Center"/><TextBlock x:Name="Eq62Value" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq62" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="125" HorizontalAlignment="Center"/><TextBlock x:Name="Eq125Value" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq125" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="250" HorizontalAlignment="Center"/><TextBlock x:Name="Eq250Value" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq250" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="500" HorizontalAlignment="Center"/><TextBlock x:Name="Eq500Value" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq500" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="1K" HorizontalAlignment="Center"/><TextBlock x:Name="Eq1kValue" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq1k" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="2K" HorizontalAlignment="Center"/><TextBlock x:Name="Eq2kValue" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq2k" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="4K" HorizontalAlignment="Center"/><TextBlock x:Name="Eq4kValue" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq4k" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="8K" HorizontalAlignment="Center"/><TextBlock x:Name="Eq8kValue" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq8k" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+         <StackPanel Margin="3"><TextBlock Text="16K" HorizontalAlignment="Center"/><TextBlock x:Name="Eq16kValue" Text="0" Foreground="#FFD36A" FontWeight="Bold" HorizontalAlignment="Center"/><Slider x:Name="Eq16k" Orientation="Vertical" Height="105" Minimum="-12" Maximum="12" Value="0" TickFrequency="1" ValueChanged="OutputProcessing_Changed"/></StackPanel>
+        </UniformGrid>
+       </StackPanel>
+      </Border>
+     </StackPanel>
+    </ScrollViewer>
+   </Border>
+  </Grid>
+
+  <Border Grid.Row="3" Background="#121C27" CornerRadius="7" Margin="0,8,0,0"><TextBlock Text="SMART PLAYOUT  •  v0.6.8.50.57  •  CG + CHROMA KEYER CONTROLS  •  cumulative corrections preserved" Foreground="#90A4B8"/></Border>
+ </Grid>
+</Window>

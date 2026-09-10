@@ -1,0 +1,196 @@
+﻿<UserControl x:Class="FFmpegNativePlayer.ProgramWorkspace"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+
+ Background="#0B1017" Foreground="#F3F7FB">
+ <UserControl.Resources>
+  <Style TargetType="Button" BasedOn="{StaticResource Modern3DButton}"/>
+  <Style TargetType="TextBox">
+   <Setter Property="Height" Value="30"/><Setter Property="Margin" Value="4,0"/>
+   <Setter Property="Background" Value="#0C131C"/><Setter Property="Foreground" Value="#F3F7FB"/>
+   <Setter Property="BorderBrush" Value="#33485D"/><Setter Property="CaretBrush" Value="#79C8FF"/>
+  </Style>
+  <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource ModernIconButton}"/>
+  <Style x:Key="GreenIconButton" TargetType="Button" BasedOn="{StaticResource IconGreen3D}"/>
+  <Style x:Key="BlueIconButton" TargetType="Button" BasedOn="{StaticResource IconBlue3D}"/>
+  <Style x:Key="AmberIconButton" TargetType="Button" BasedOn="{StaticResource IconAmber3D}"/>
+  <Style x:Key="RedIconButton" TargetType="Button" BasedOn="{StaticResource IconRed3D}"/>
+  <Style x:Key="PurpleIconButton" TargetType="Button" BasedOn="{StaticResource IconPurple3D}"/>
+  <Style x:Key="CyanIconButton" TargetType="Button" BasedOn="{StaticResource IconCyan3D}"/>
+ </UserControl.Resources>
+ <Grid Margin="12">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Border Background="#16212D" BorderBrush="#38506A" BorderThickness="1" Padding="9" CornerRadius="5">
+   <DockPanel>
+    <TextBlock Text="PROGRAM MANAGER" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+     <Button Style="{StaticResource GreenIconButton}" Content="&#xE710;" ToolTip="New Program" Click="New_Click"/>
+     <Button Style="{StaticResource BlueIconButton}" Content="&#xE8E5;" ToolTip="Open Program" Click="Open_Click"/>
+     <Button Style="{StaticResource BlueIconButton}" Content="&#xE74E;" ToolTip="Save Program" Click="Save_Click"/>
+     <Button Style="{StaticResource AmberIconButton}" Content="&#xE792;" ToolTip="Save Program As" Click="SaveAs_Click"/>
+    </StackPanel>
+   </DockPanel>
+  </Border>
+  <Grid Grid.Row="1" Margin="0,10">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="235"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border Grid.Column="0" Background="#111A24" BorderBrush="#30465C" BorderThickness="1" Padding="8">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <TextBlock Text="PROGRAM NAME" FontSize="11" Foreground="#9EABBC"/>
+     <TextBox Grid.Row="1" x:Name="ProgramNameBox" Margin="0,5,0,10" LostFocus="ProgramNameBox_LostFocus"/>
+     <DockPanel Grid.Row="2" Margin="0,0,0,5">
+      <TextBlock Text="PROGRAM LIBRARY" FontSize="11" Foreground="#9EABBC"/>
+      <TextBlock x:Name="ProgramCountText" DockPanel.Dock="Right" Text="0 PROGRAMS" FontSize="10" Foreground="#7F8C9D"/>
+     </DockPanel>
+     <ListBox Grid.Row="3" x:Name="ProgramLibraryList" SelectionChanged="ProgramLibraryList_SelectionChanged" Background="#0C121A" Foreground="#F3F7FB" BorderBrush="#30465C" Margin="0,0,0,8">
+      <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" TextTrimming="CharacterEllipsis"/></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+     <StackPanel Grid.Row="4">
+      <Button Style="{StaticResource Modern3DButton}" Content="⏱  ADD TO SCHEDULE" Foreground="#63E7E5" ToolTip="Add selected Program to Scheduler" Click="AddToSchedule_Click" Margin="0,0,0,8"/>
+      <TextBlock x:Name="ProgramFileText" Text="Not saved" Visibility="Collapsed"/>
+      <TextBlock Text="TOTAL PLAY DURATION" FontSize="11" Foreground="#9EABBC"/>
+      <TextBlock x:Name="TotalDurationText" Text="00:00:00" FontSize="18" FontWeight="Bold" Margin="0,5,0,0"/>
+     </StackPanel>
+    </Grid>
+   </Border>
+
+   <Grid Grid.Column="1" Margin="10,0,0,0">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition x:Name="EditorRow" Height="0"/></Grid.RowDefinitions>
+    <WrapPanel Margin="0,0,0,6">
+     <Button Style="{StaticResource GreenIconButton}" Content="&#xE8B7;" ToolTip="Add Media File" Click="AddFile_Click"/>
+     <Button Style="{StaticResource GreenIconButton}" Content="&#xE8F4;" ToolTip="Add Multiple Media Files" Click="AddMulti_Click"/>
+     <Button Style="{StaticResource BlueIconButton}" Content="&#xE768;" ToolTip="Preview Selected" Click="PreviewSelected_Click"/>
+     <Button Style="{StaticResource BlueIconButton}" Content="&#xE74A;" ToolTip="Move Up" Click="Up_Click"/>
+     <Button Style="{StaticResource BlueIconButton}" Content="&#xE74B;" ToolTip="Move Down" Click="Down_Click"/>
+     <Button Style="{StaticResource AmberIconButton}" Content="&#xE8B1;" ToolTip="Shuffle Program" Click="Shuffle_Click"/>
+     <Button Style="{StaticResource AmberIconButton}" Content="&#xE8C8;" ToolTip="Duplicate Selected" Click="Duplicate_Click"/>
+     <Button Style="{StaticResource RedIconButton}" Content="&#xE74D;" ToolTip="Remove Selected" Click="Remove_Click"/>
+     <Button Style="{StaticResource RedIconButton}" Content="&#xE894;" ToolTip="Clear Program Media" Click="Clear_Click"/>
+    </WrapPanel>
+
+    <ListView Grid.Row="1" x:Name="MediaList" Background="#10151C" Foreground="#E8EDF5"
+              BorderBrush="#2D3745" BorderThickness="1" MouseDoubleClick="MediaList_MouseDoubleClick"
+              SelectionChanged="MediaList_SelectionChanged">
+     <ListView.ContextMenu>
+      <ContextMenu Opened="ProgramContextMenu_Opened">
+       <MenuItem Header="▶  PLAY NOW / TAKE TO AIR" Click="ProgramPlayNow_Click"/>
+       <MenuItem Header="⏭  PLAY NEXT" Click="ProgramPlayNext_Click"/>
+       <MenuItem Header="◉  Preview Selected" Click="ContextPreview_Click"/>
+       <Separator/>
+       <MenuItem Header="＋  Insert Before" Click="InsertBefore_Click"/>
+       <MenuItem Header="＋  Insert After" Click="InsertAfter_Click"/>
+       <MenuItem Header="⟳  Replace / Change File" Click="ReplaceFile_Click"/>
+       <MenuItem x:Name="ProgramAudioContextMenu" Header="🎧  Audio Language"/>
+       <MenuItem Header="ⓘ  Properties" Click="Properties_Click"/>
+       <Separator/>
+       <MenuItem Header="↑  Move Up" Click="Up_Click"/>
+       <MenuItem Header="↓  Move Down" Click="Down_Click"/>
+       <MenuItem Header="▣  Duplicate" Click="Duplicate_Click"/>
+       <MenuItem Header="⤨  Shuffle Program" Click="Shuffle_Click"/>
+       <Separator/>
+       <MenuItem Header="✕  Remove" Click="Remove_Click"/>
+      </ContextMenu>
+     </ListView.ContextMenu>
+     <ListView.ItemContainerStyle>
+      <Style TargetType="ListViewItem">
+       <Setter Property="Foreground" Value="#E8EDF5"/><Setter Property="Background" Value="#151B23"/>
+       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+       <Style.Triggers><Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="#34465F"/><Setter Property="Foreground" Value="White"/>
+       </Trigger></Style.Triggers>
+      </Style>
+     </ListView.ItemContainerStyle>
+     <ListView.View><GridView>
+      <GridViewColumn Header="#" Width="38" DisplayMemberBinding="{Binding Number}"/>
+      <GridViewColumn Header="MEDIA" Width="245" DisplayMemberBinding="{Binding Name}"/>
+      <GridViewColumn Header="DESCRIPTION" Width="220" DisplayMemberBinding="{Binding Description}"/>
+      <GridViewColumn Header="IN" Width="98" DisplayMemberBinding="{Binding InText}"/>
+      <GridViewColumn Header="OUT" Width="98" DisplayMemberBinding="{Binding OutText}"/>
+      <GridViewColumn Header="PLAY DUR" Width="92" DisplayMemberBinding="{Binding DurationText}"/>
+      <GridViewColumn Header="AUDIO" Width="108">
+       <GridViewColumn.CellTemplate><DataTemplate>
+        <ComboBox ItemsSource="{Binding AvailableAudioLanguages}" SelectedItem="{Binding AudioLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                  SelectionChanged="ProgramAudioLanguage_SelectionChanged" MinWidth="94" Height="24" ToolTip="Saved Audio Language / Track"/>
+       </DataTemplate></GridViewColumn.CellTemplate>
+      </GridViewColumn>
+     </GridView></ListView.View>
+    </ListView>
+
+    <Border x:Name="ProgramEditorBorder" Grid.Row="2" Margin="0,8,0,0" Background="#111A24" BorderBrush="#3B5874" BorderThickness="1" CornerRadius="5" Padding="8" Visibility="Collapsed">
+     <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="318"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Grid Grid.Column="0">
+       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="178"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+       <TextBlock Text="PREVIEW — ATTACHED CLIP EDITOR" FontSize="11" FontWeight="Bold" Foreground="#72C9FF" Margin="0,0,0,5"/>
+       <Border Grid.Row="1" Background="#020509" BorderBrush="#3E5B76" BorderThickness="1" CornerRadius="3">
+        <Grid>
+         <Image x:Name="PreviewImage" Stretch="Fill"/>
+         <TextBlock x:Name="PreviewEmptyText" Text="Select an item and Preview" Foreground="#6F7C8D" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+       </Border>
+       <TextBlock Grid.Row="2" x:Name="PreviewNameText" Text="No media selected" TextTrimming="CharacterEllipsis" Margin="0,5,0,3" FontWeight="SemiBold"/>
+       <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
+        <Button Style="{StaticResource GreenIconButton}" Content="&#xE768;" ToolTip="Play Preview" Click="PreviewPlay_Click"/>
+        <Button Style="{StaticResource AmberIconButton}" Content="&#xE769;" ToolTip="Pause / Resume Preview" Click="PreviewPause_Click"/>
+        <Button Style="{StaticResource RedIconButton}" Content="&#xE71A;" ToolTip="Stop Preview" Click="PreviewStop_Click"/>
+        <Button x:Name="PreviewMuteButton" Style="{StaticResource BlueIconButton}" Content="&#xE74F;" ToolTip="Unmute Preview" Click="PreviewMute_Click"/>
+       </StackPanel>
+      </Grid>
+
+      <Grid Grid.Column="1" Margin="12,0,0,0">
+       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+       </Grid.RowDefinitions>
+       <DockPanel>
+        <TextBlock Text="PRECISION SEEK / IN–OUT" FontWeight="Bold" Foreground="#EAF5FF"/>
+        <TextBlock x:Name="PreviewPlayheadText" DockPanel.Dock="Right" Text="PLAYHEAD  00:00:00.000" Foreground="#60E6DA"/>
+       </DockPanel>
+       <Grid Grid.Row="1" Margin="0,8,0,0">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="92"/><ColumnDefinition Width="*"/><ColumnDefinition Width="92"/></Grid.ColumnDefinitions>
+        <TextBlock x:Name="PreviewCurrentText" Text="00:00:00.000" VerticalAlignment="Center" Foreground="#9FD9FF"/>
+        <Slider Grid.Column="1" x:Name="PreviewSeekSlider" Minimum="0" Maximum="1" Value="0"
+                Margin="8,0" Height="30" IsMoveToPointEnabled="True"
+                PreviewMouseLeftButtonDown="PreviewSeek_PreviewMouseLeftButtonDown"
+                PreviewMouseLeftButtonUp="PreviewSeek_PreviewMouseLeftButtonUp"
+                ValueChanged="PreviewSeek_ValueChanged"/>
+        <TextBlock Grid.Column="2" x:Name="PreviewTotalText" Text="00:00:00.000" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#9FD9FF"/>
+       </Grid>
+
+       <Grid Grid.Row="2" Margin="0,7,0,0">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="150"/><ColumnDefinition Width="20"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="150"/><ColumnDefinition Width="20"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions>
+        <TextBlock Text="IN" VerticalAlignment="Center" FontWeight="Bold" Foreground="#65E38C"/>
+        <TextBox Grid.Column="1" x:Name="InPointText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/>
+        <TextBlock Grid.Column="3" Text="OUT" VerticalAlignment="Center" FontWeight="Bold" Foreground="#FF8D8D"/>
+        <TextBox Grid.Column="4" x:Name="OutPointText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/>
+        <TextBlock Grid.Column="6" Text="DURATION" VerticalAlignment="Center" FontWeight="Bold" Foreground="#FFD36A"/>
+        <TextBox Grid.Column="7" x:Name="ClipDurationText" Text="00:00:00.000" IsReadOnly="True" TextAlignment="Center"/>
+       </Grid>
+
+       <WrapPanel Grid.Row="3" Margin="0,7,0,0">
+        <Button Style="{StaticResource Modern3DButton}" Width="86" ToolTip="Mark current playhead as IN" Click="SetIn_Click" Foreground="#65E38C"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B0;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="IN" FontWeight="Bold"/></StackPanel></Button>
+        <Button Style="{StaticResource Modern3DButton}" Width="90" ToolTip="Mark current playhead as OUT" Click="SetOut_Click" Foreground="#FF8D8D"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8B0;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="OUT" FontWeight="Bold"/></StackPanel></Button>
+        <Button Style="{StaticResource Modern3DButton}" Width="104" ToolTip="Apply and save IN / OUT" Click="ApplyInOut_Click" Foreground="#63E7E5"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="SET" FontWeight="Bold"/></StackPanel></Button>
+        <Button Style="{StaticResource Modern3DButton}" Width="118" ToolTip="Reset to full source; press SET to save" Click="ResetInOut_Click" Foreground="#FFD36A"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE777;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="RESET" FontWeight="Bold"/></StackPanel></Button>
+        <Button Style="{StaticResource Modern3DButton}" Width="118" ToolTip="Split non-destructively at current playhead" Click="Split_Click" Foreground="#C89BFF"><StackPanel Orientation="Horizontal"><TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8C6;" Margin="0,0,7,0"/><TextBlock FontFamily="Segoe UI" Text="SPLIT" FontWeight="Bold"/></StackPanel></Button>
+       </WrapPanel>
+
+       <Grid Grid.Row="4" Margin="0,8,0,0">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <TextBlock Text="DESCRIPTION" Foreground="#9EABBC" FontSize="11" VerticalAlignment="Center"/>
+        <TextBox Grid.Column="1" x:Name="DescriptionBox" Height="32" ToolTip="Operator description saved with this Program item" LostFocus="DescriptionBox_LostFocus"/>
+       </Grid>
+
+       <TextBlock Grid.Row="5" Margin="0,7,0,0" Foreground="#75869A" TextWrapping="Wrap"
+                  Text="Non-destructive edit: original media file is never modified. IN / OUT / SPLIT metadata is saved with the Program and carried into Scheduler playback."/>
+      </Grid>
+     </Grid>
+    </Border>
+   </Grid>
+  </Grid>
+  <DockPanel Grid.Row="2">
+   <TextBlock x:Name="StatusText" Text="READY" Foreground="#9EABBC" VerticalAlignment="Center"/>
+   <Button DockPanel.Dock="Right" Content="ON AIR" Click="Close_Click" ToolTip="Return to On Air dashboard"/>
+  </DockPanel>
+ </Grid>
+</UserControl>

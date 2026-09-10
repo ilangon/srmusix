@@ -1,0 +1,18 @@
+v0.6.8.50.54 worker lifecycle fix (cumulative package)
+
+Log (6) confirms Release compilation and self-contained publish succeeded with
+0 errors. Verification then failed because Windows PowerShell could not bind
+Process.Kill(Boolean), leaving a worker alive on the fixed global named pipe.
+
+Corrections:
+  - Verification uses the broadly compatible Process.Kill() overload.
+  - Every verification run uses unique named pipes, preventing stale test
+    processes from blocking subsequent builds.
+  - Every application instance supplies unique worker pipe names and connects
+    to those same names, preventing a worker left by an older build/run from
+    colliding with the new application.
+  - WorkerHost unregisters process-exit/cancel handlers before its cancellation
+    source is disposed, preventing the reported ObjectDisposedException.
+
+Includes all earlier C# compile, publish manifest, path-safety and BOM fixes.
+Extract into a fresh folder and run BUILD_AND_RUN.bat.

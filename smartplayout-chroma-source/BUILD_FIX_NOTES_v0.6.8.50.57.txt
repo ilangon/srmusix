@@ -1,0 +1,18 @@
+SMART PLAYOUT v0.6.8.50.57 — CHROMA KEYER OPEN FIX
+
+Fixed the CHROMA KEY OPEN Null Reference error reported in
+CHROMA_KEY_OPEN.log.
+
+Cause
+The new Key Quality TextBox controls raise TextChanged while WPF is building
+the window. During that construction phase some slider controls do not yet
+exist. The initial synchronization attempted to access those controls.
+
+Fix
+TextBox-to-slider synchronization is deferred until the Chroma Key window is
+fully Loaded. The Loaded handler performs one safe initial synchronization.
+All slider references are also guarded as a fallback.
+
+Build
+Run BUILD_AND_RUN.bat after extracting this source package. The expected log
+file is BUILD_AND_RUN_v0.6.8.50.57.log.

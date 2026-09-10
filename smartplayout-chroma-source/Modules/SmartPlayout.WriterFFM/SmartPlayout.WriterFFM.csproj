@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>SmartPlayout.WriterFFM</AssemblyName>
+    <RootNamespace>SmartPlayout.WriterFFM</RootNamespace>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Window x:Class="FFmpegNativePlayer.AudioMixerWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="SMART PLAYOUT • AUDIO MIXER" Width="720" Height="430" WindowStartupLocation="CenterOwner" Background="#0B1118" Foreground="White">
+ <Grid Margin="14"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="AUDIO MIXER" FontSize="24" FontWeight="Bold" Foreground="#FFD36A"/><TextBlock Text="Final Program audio processing — independent from CG." Foreground="#9FB0C0"/></StackPanel>
+  <Border Grid.Row="1" Margin="0,14,0,14" Padding="16" Background="#0F1A24" BorderBrush="#38536A" BorderThickness="1" CornerRadius="8"><StackPanel>
+   <DockPanel><TextBlock Text="MASTER GAIN" FontWeight="Bold"/><TextBlock x:Name="GainValue" DockPanel.Dock="Right" Foreground="#69F0C5" FontWeight="Bold"/></DockPanel>
+   <Slider x:Name="GainSlider" Minimum="-24" Maximum="12" TickFrequency="1" Margin="0,12" ValueChanged="GainSlider_ValueChanged"/>
+   <CheckBox x:Name="NormalizeCheck" Content="AUDIO NORMALIZE" Foreground="White" Margin="0,8"/>
+   <TextBlock Text="Use OPEN FULL 10-BAND EQ for limiter, LUFS, EQ bands and advanced processing." Foreground="#9FB0C0" TextWrapping="Wrap" Margin="0,8,0,0"/>
+  </StackPanel></Border>
+  <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"><Button Width="120" Height="34" Margin="4" Content="APPLY" Click="Apply_Click"/><Button Width="170" Height="34" Margin="4" Content="OPEN FULL 10-BAND EQ" Click="OpenEq_Click"/><Button Width="100" Height="34" Margin="4" Content="CLOSE" Click="Close_Click"/></StackPanel>
+ </Grid>
+</Window>
