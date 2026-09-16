@@ -1,0 +1,9 @@
+{
+  "name": "srmusix-cg-creator",
+  "version": "1.0.0",
+  "description": "SR MUSIX standalone broadcast Character Generator",
+  "main": "main.js",
+  "scripts": {"start":"electron .","dist":"electron-builder --win x64"},
+  "devDependencies": {"electron":"^37.2.0","electron-builder":"^26.0.12"},
+  "build": {"appId":"com.srmusix.cgcreator","productName":"SR MUSIX CG Creator","win":{"target":["nsis","portable"]},"files":["**/*"]}
+}
